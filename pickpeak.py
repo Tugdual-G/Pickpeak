@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
 from numba import jit
-from reduceRaster import max_reduce, max_reduce_nan
 
 
 @jit(nopython=True, parallel=True, cache=True)
@@ -27,10 +26,9 @@ def localmax_simple(R, xs, ys, zs, bbox):
     return idx[0:k]
 
 
-@jit(nopython=True, parallel=True, cache=True)
+# @jit(nopython=True, parallel=True, cache=True)
 def localmax(R, xs, ys, zs, bbox):
     """R , xs, ys and margin should be intergers in index coordinates"""
-    print(10 * "--")
     idx = np.arange(len(xs) + 1)
     ok_idx = np.zeros((len(xs)), dtype=np.int_) - 1
     R = R**2
@@ -60,7 +58,7 @@ def localmax(R, xs, ys, zs, bbox):
     return ok_idx[0:k]
 
 
-@jit(nopython=True, parallel=True, cache=True)
+# @jit(nopython=True, parallel=True, cache=True)
 def verylocalmax(z, h):
     xmax = np.zeros(int(z.shape[0] * z.shape[1] // 3), dtype=np.int_) - 1
     ymax = np.zeros(int(z.shape[0] * z.shape[1] // 3), dtype=np.int_) - 1
@@ -87,23 +85,6 @@ def verylocalmax(z, h):
             # ymax += [y0]
             # maxlist += [lmax]
 
-    i = z.shape[0] - h - 1
-    for j in range(z.shape[1] - h - 1, h, -2 * h):
-        lmax = z[i, j]
-        y0, x0 = i, j
-        for k in range(-h, h):
-            for l in range(-h, h):
-                if lmax < z[i + k, j + l]:
-                    lmax = z[i + k, j + l]
-                    y0, x0 = i + k, j + l
-        xmax[q] = x0
-        ymax[q] = y0
-        maxlist[q] = lmax
-        q += 1
-        # xmax += [x0]
-        # ymax += [y0]
-        # maxlist += [lmax]
-
     for i in range(z.shape[0] - h - 1, h, -2 * h):
         for j in range(z.shape[1] - h - 1, h, -2 * h):
             lmax = z[i, j]
@@ -127,7 +108,7 @@ def find_summits(R, z, bbox=None):
     """R must be in index coordinates"""
     # the max distance possible between two point should
     # be <= R in the first pass
-    h0 = R / np.sqrt(2)
+    h0 = int(R / np.sqrt(2))
     x, y, z = verylocalmax(z, h0)
     return x, y, z, localmax(R, x, y, z, bbox)
 

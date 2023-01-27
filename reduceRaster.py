@@ -67,6 +67,8 @@ def max_reduce_nodata(z, h, nodata):
             idxj[i * n0 + j] = i
 
     idxi = np.arange(n0 // h * m0)
+
+    # draw a little sketch to understand this
     z, idxj[: n0 // h * m0], _ = red(z, h, idxj, m0, nodata)
     z, idxi[: (m0 // h) * (n0 // h)], idxj[: (m0 // h) * (n0 // h)] = red(
         z, h, idxj, n0 // h, nodata

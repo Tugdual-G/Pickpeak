@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from logging import raiseExceptions
 from matplotlib import markers
 import numpy as np
 from numba import jit
@@ -8,7 +9,12 @@ import pdb
 
 @jit(nopython=True, parallel=True, cache=True)
 def localmax(R, xs, ys, zs, bbox):
-    """R , xs, ys and margin should be intergers in index coordinates"""
+    """
+    Find the isolated peak and return ok_idx, i.e where to find their
+    position in xs, ys.
+
+    R , xs, ys and bbox should be integers in index coordinates
+    """
     idx = np.arange(len(xs) + 1)
     ok_idx = np.zeros((len(xs)), dtype=np.int_) - 1
     R = R**2
@@ -19,19 +25,22 @@ def localmax(R, xs, ys, zs, bbox):
         trigg = True
         for j in range(m):
             d = (xs[i] - xs[j]) ** 2 + (ys[i] - ys[j]) ** 2
-            if d < R and 0 < d:
+            if d < R:
                 # if the summits are of same z, we keep only one (i)
-                # exclude identical points with 0<d
                 if zs[i] < zs[j]:
                     trigg = False
                     break
                 else:
+                    # we trow away the value of idx[j]
+                    # because we don't have to test it against another summit
                     idx[j] = idx[j + 1]
 
         if trigg and (bbox[0] <= xs[i] < bbox[1]) and (bbox[2] <= ys[i] < bbox[3]):
             ok_idx[k] = i
             k += 1
         i += 1
+        # going through the discarded values until
+        # finding a potentially valid one
         while i != idx[i]:
             i = idx[i]
 
@@ -44,13 +53,16 @@ def find_summits(h, z, bbox=None, nodata=-9999):
     the max distance possible between two summits, is sqrt(2)*h
     """
 
-    assert isinstance(h, int)
+    if not isinstance(h, int):
+        raise TypeError(f"h should be an integer not {type(h)}")
+
     if bbox == None:
         bbox = (0, z.shape[0], 0, z.shape[1])
 
     R = h * np.sqrt(2)
     z0, x, y = max_reduce_nodata(z, h, nodata)
     z0.shape = z0.shape[0] * z0.shape[1]
+
     return z0, x, y, localmax(R, x, y, z0, bbox)
 
 

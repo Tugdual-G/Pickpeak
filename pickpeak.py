@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+from matplotlib import markers
 import numpy as np
 from numba import jit
 from reduceRaster import max_reduce_nodata
 import pdb
 
-# @jit(nopython=True, parallel=True, cache=True)
+
+@jit(nopython=True, parallel=True, cache=True)
 def localmax(R, xs, ys, zs, bbox):
     """R , xs, ys and margin should be intergers in index coordinates"""
     idx = np.arange(len(xs) + 1)
@@ -89,22 +91,34 @@ def main():
     plt.pcolormesh(x, y, z, cmap="gist_earth")
     plt.vlines(np.arange(0, n, h) - 1 / 2, -1 / 2, m - 1 / 2, color="k", alpha=0.3)
     plt.hlines(np.arange(0, m, h) - 1 / 2, -1 / 2, n - 1 / 2, color="k", alpha=0.3)
+
     plt.scatter(
         x0,
         y0,
-        c=imp.tolist(),
-        s=(70 * imp**2).tolist(),
-        marker="+",
-        cmap="RdGy",
-        zorder=10,
+        c="k",
+        marker=".",
+        s=50,
     )
+
+    plt.scatter(
+        x0[idx],
+        y0[idx],
+        c="k",
+        marker="+",
+        s=350,
+    )
+
     ax = plt.gca()
+    fig = plt.gcf()
     for xc, yc in zip(x0[idx], y0[idx]):
         circ = Circle((xc, yc), R, fill=False, edgecolor="k", linestyle="--")
         ax.add_patch(circ)
     ax.set_aspect("equal")
     ax.set_xlim(0, n)
     ax.set_ylim(0, m)
+
+    # fig.set_size_inches(8, 8)
+    # plt.savefig("test.png", bbox_inches="tight", dpi=100)
 
     plt.show()
 

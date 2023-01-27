@@ -3,7 +3,7 @@ import numpy as np
 from numba import jit
 
 
-# @jit(nopython=True, parallel=True, cache=True)
+@jit(nopython=True, parallel=True, cache=True)
 def max_reduce_nodata(z, h, nodata):
     """Flip Flop"""
 

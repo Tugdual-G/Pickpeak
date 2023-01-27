@@ -1,4 +1,4 @@
-# Document Title
+# Peak finder
 ![alt text](test.png)
 
 

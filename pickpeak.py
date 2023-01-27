@@ -81,11 +81,9 @@ def main():
     t0 = time.time_ns()
     zr, x0, y0, idx = find_summits(h, z)
     t1 = time.time_ns()
-
+    print(f"time {(t1 - t0) / 1e6} ms")
     imp = np.ones_like(x0)
     imp[idx] = 2
-
-    print("time", (t1 - t0) / 1e6)
 
     x, y = np.meshgrid(np.arange(n), np.arange(m))
     plt.pcolormesh(x, y, z, cmap="gist_earth")
@@ -111,4 +109,5 @@ def main():
     plt.show()
 
 
-main()
+if __name__ == "__main__":
+    main()

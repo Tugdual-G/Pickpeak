@@ -37,16 +37,16 @@ def localmax(R, xs, ys, zs, bbox):
     return ok_idx[0:k]
 
 
-def find_summits(R, z, bbox=None):
+def find_summits(R, z, bbox, nodata=-9999):
     """R must be in index coordinates"""
     # the max distance possible between two point should
     # be <= R in the first pass
     h0 = int(R / np.sqrt(2))
-    if R < 2:
-        R = 2
-    z0, x, y = max_reduce_nodata(z, h0, -999)
-    # return x, y, z0, localmax(R, x, y, z0.ravel(), bbox)
-    return z0, x, y
+    if h0 < 2:
+        h0 = 2
+    z0, x, y = max_reduce_nodata(z, h0, nodata)
+    z0.shape = z0.shape[0] * z0.shape[1]
+    return z0, x, y, localmax(R, x, y, z0, bbox)
 
 
 def main():
@@ -66,70 +66,33 @@ def main():
     print(f)
     datasets = rio.open(dpath + f, crs="eps:2154")
     z = datasets.read(1)
-    z = np.array(z)
-    # z[10:50, 50:60] = 350
-    z[-160:-140, -190:-170] = 350
-    trans = datasets.transform
-    dx = trans[0]
+    # z = np.array(z, dtype=np.double)
 
-    h = int(1e3 // dx)
-    h *= 8
-    print(h)
-    bbox = (0, z.shape[0], 0, z.shape[1])
+    m, n = z.shape
+    R = 200
+    h0 = int(R / np.sqrt(2))
+    if h0 < 2:
+        h0 = 2
+
+    x, y = np.meshgrid(np.arange(n), np.arange(m))
+
+    bbox = (0, n, 0, m)
 
     t0 = time.time_ns()
-    # z0, x0, y0 = find_summits(h, z, bbox=bbox)
-    z0, x0, y0 = max_reduce_nodata(z, h, -9999)
-    plt.imshow(z)
-    plt.scatter(x0, y0, c="k")
+    zr, x0, y0, idx = find_summits(R, z, bbox)
     t1 = time.time_ns()
+
+    imp = np.zeros_like(x0)
+    imp[idx] = 1
+
     print("time", (t1 - t0) / 1e6)
 
-    # z0 = z0.ravel()
-    # importance = np.ones(len(x0), dtype=np.int_)
-    #
-    ## t0 = time.time_ns()
-    ## for i in range(1, 6):
-    ## idx = localmax(2 * i * h, x0, y0, z0, bbox=bbox)
-    ## importance[idx] += 1
-    ## t1 = time.time_ns()
-    ## print("time", (t1 - t0) / 1e6)
-    #
-    # x0, y0 = rio.transform.xy(trans, y0, x0)
-    ## print(*trans)
-    ## x0 = x0 * trans[0] + trans[2]
-    ## y0 = y0 * trans[4] + trans[5]
-    #
-    # x, y = np.meshgrid(
-    # np.arange(z.shape[1]),
-    # np.arange(z.shape[0]),
-    # )
-    # x, y = rio.transform.xy(trans, y, x)
-    # x, y = np.array(x), np.array(y)
-    # x0, y0 = np.array(x0), np.array(y0)
-    #
-    # step = 4
-    # plt.pcolormesh(
-    # x[::step, ::step], y[::step, ::step], z[::step, ::step], cmap="viridis"
-    # )
-    # h0 = int(h / np.sqrt(2))
-    # for i in range(1000 // h0 + 1):
-    # xl = x[0, 0] + i * h0 * dx
-    # plt.axvline(xl)
-    #
-    # for i in range(1000 // h0 + 1):
-    # yl = y[-1, 0] + i * h0 * dx
-    # plt.axhline(yl)
-
-    # plt.scatter(
-    # x=x0,
-    # y=y0,
-    # c=importance.tolist(),
-    # marker="o",
-    # s=(10 * (2 * importance) ** 2).tolist(),
-    # )
-    # print(x0.shape)
-    # plt.scatter(x0, y0)
+    plt.pcolormesh(x, y, z)
+    plt.vlines(np.arange(0, n, h0) - 1 / 2, -1 / 2, m - 1 / 2, color="k")
+    plt.hlines(np.arange(0, m, h0) - 1 / 2, -1 / 2, n - 1 / 2, color="k")
+    plt.scatter(
+        x0, y0, c=imp.tolist(), s=(20 * 2**imp).tolist(), marker="o", cmap="magma"
+    )
 
     plt.show()
 

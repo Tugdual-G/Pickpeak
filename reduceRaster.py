@@ -57,15 +57,14 @@ def max_reduce_nodata(z, h, nodata):
 
     m, n = z.shape
 
-    idxj0 = np.empty((n * m), dtype=np.int_)
+    idxj = np.empty((n * m), dtype=np.int_)
     for i in range(m):
         for j in range(n):
-            idxj0[i * n + j] = i
+            idxj[i * n + j] = i
 
     idxi = np.arange(n // h * m) - 1
-    idxj = np.arange(n // h * m) - 1
-    z, idxj, _ = red(z, h, idxj0, nodata)
-    z, idxj[: (m // h) * (n // h)], idxi[: (m // h) * (n // h)] = red(
+    z, idxj[: n // h * m], _ = red(z, h, idxj, nodata)
+    z, idxi[: (m // h) * (n // h)], idxj[: (m // h) * (n // h)] = red(
         z, h, idxj, nodata
     )
     return (
@@ -75,7 +74,7 @@ def max_reduce_nodata(z, h, nodata):
     )
 
 
-if __name__ == "__main__":
+def test1():
     import matplotlib.pyplot as plt
     import time
 
@@ -105,5 +104,41 @@ if __name__ == "__main__":
     ax = plt.gca()
     ax.vlines(np.arange(0, n, h) - 1 / 2, -1 / 2, m - 1 / 2, color="k")
     ax.hlines(np.arange(0, m, h) - 1 / 2, -1 / 2, n - 1 / 2, color="k")
-    plt.scatter(idxi, idxj, marker="o", c="r")
+    plt.scatter(idxj, idxi, marker="o", c="r")
     plt.show()
+
+
+def test2():
+    import rasterio as rio
+    import matplotlib.pyplot as plt
+    import time
+
+    dpath = "../topo_map/data/data/raster/BDALTIV2_2-0_25M_ASC_LAMB93-IGN69_D085_2021-09-15/BDALTIV2/1_DONNEES_LIVRAISON_2021-10-00008/BDALTIV2_MNT_25M_ASC_LAMB93_IGN69_D085/"
+    f = "BDALTIV2_25M_FXX_0400_6650_MNT_LAMB93_IGN69.asc"
+
+    datasets = rio.open(dpath + f, crs="eps:2154")
+    z = datasets.read(1)
+    print(np.isfortran(z))
+    z = np.array(z, dtype=np.double)
+    z = z[::10, ::10]
+    m, n = z.shape
+    z[60:70, 70:90] = 300
+    z[10:30, 50:70] = 9999
+    h = 20
+    x, y = np.meshgrid(np.arange(n), np.arange(m))
+    plt.pcolormesh(x, y, z, vmax=320)
+    zr, idxj, idxi = max_reduce_nodata(z, h, 9999)
+    for i in range(m // h):
+        print(i)
+        for j in range(n // h):
+            maxv = np.amax(z[h * i : h * (i + 1), h * j : h * (j + 1)])
+            print("    ", j, round(maxv), round(zr[i, j]))
+
+    plt.vlines(np.arange(0, n, h) - 1 / 2, -1 / 2, m - 1 / 2, color="k")
+    plt.hlines(np.arange(0, m, h) - 1 / 2, -1 / 2, n - 1 / 2, color="k")
+    plt.scatter(idxj, idxi, marker="+", c="r")
+    plt.show()
+
+
+if __name__ == "__main__":
+    test1()

@@ -4,25 +4,7 @@ from numba import jit
 
 
 @jit(nopython=True, parallel=True, cache=True)
-def max_reduce(z, h):
-    """Flip Flop"""
-
-    def red(z, h):
-        n = int(z.shape[1] // h)
-        zr = np.zeros((n, z.shape[0]), dtype=np.double) - 1
-        for i in range(z.shape[0]):
-            for j in range(n):
-                zr[j, i] = np.amax(z[i, j * h : (j + 1) * h])
-
-        return zr
-
-    z0 = red(z, h)
-    zr = red(z0, h)
-    return zr
-
-
-# @jit(nopython=True, parallel=True, cache=True)
-def max_reduce_nanidx(z, h, nodata, depht=1):
+def max_reduce_nodata(z, h, nodata):
     """Flip Flop"""
 
     def red(z, h, i_prev0, nodata):
@@ -57,13 +39,13 @@ def max_reduce_nanidx(z, h, nodata, depht=1):
                 if vmax < x[i] and x[i] != nodata:
                     vmax = x[i]
                     imax = i
-            return vmax, imax
+            return vmax, int(imax)
 
         m = z.shape[0]
         n = int(z.shape[1] // h)
-        j_in = np.arange(n * z.shape[0], dtype=np.int_) - 1
-        i_prev = np.arange(n * z.shape[0], dtype=np.int_) - 1
-        zr = np.zeros((n, z.shape[0]), dtype=np.double) - 1
+        j_in = np.empty(n * z.shape[0], dtype=np.int_)
+        i_prev = np.empty(n * z.shape[0], dtype=np.int_)
+        zr = np.empty((n, z.shape[0]), dtype=np.double)
         i0 = 0
         for i in range(m):
             for j in range(n):
@@ -74,67 +56,54 @@ def max_reduce_nanidx(z, h, nodata, depht=1):
         return zr, j_in, i_prev
 
     m, n = z.shape
-    idxj0 = np.ones(n)[np.newaxis, :] * np.arange(m)[:, np.newaxis]
-    idxj0 = idxj0.ravel()
 
-    for i in range(depht):
-        z, idxj, idxi = red(z, h, idxj0, nodata)
-        z, idxj, idxi = red(z, h, idxj, nodata)
+    idxj0 = np.empty((n * m), dtype=np.int_)
+    for i in range(m):
+        for j in range(n):
+            idxj0[i * n + j] = i
 
-    return z, idxj, idxi
-
-
-@jit(nopython=True, parallel=True, cache=True)
-def max_reduce_nan(z, h, nodata):
-    """Flip Flop"""
-
-    def maxnan(x, nodata):
-        i = 0
-        while x[i] == nodata and i < len(x):
-            i += 1
-        vmax = x[i]
-        for i in range(len(x)):
-            if vmax < x[i] and x[i] != nodata:
-                vmax = x[i]
-        return vmax
-
-    def red(z, h):
-        n = int(z.shape[1] // h)
-        zr = np.zeros((n, z.shape[0]), dtype=np.double) - 1
-        for i in range(z.shape[0]):
-            for j in range(n):
-                zr[j, i] = maxnan(z[i, j * h : (j + 1) * h], nodata)
-
-        return zr
-
-    z0 = red(z, h)
-    zr = red(z0, h)
-    return zr
+    idxi = np.arange(n // h * m) - 1
+    idxj = np.arange(n // h * m) - 1
+    z, idxj, _ = red(z, h, idxj0, nodata)
+    z, idxj[: (m // h) * (n // h)], idxi[: (m // h) * (n // h)] = red(
+        z, h, idxj, nodata
+    )
+    return (
+        z,
+        idxj[: (m // h) * (n // h)],
+        idxi[: (m // h) * (n // h)],
+    )
 
 
-def main():
+if __name__ == "__main__":
     import matplotlib.pyplot as plt
+    import time
 
-    h = 2
-    m, n = 10, 8
+    pi = np.pi
+    t = 0
+    m, n = 2**10, 2**10
+    h = 2**8
     x, y = np.meshgrid(np.arange(n), np.arange(m))
-    a = np.random.rand(m, n)
+
+    r = np.sqrt(x**2 + y**2)
+    a = np.sin(pi * 4 * r / m)
+
+    r = np.sqrt((x - 2 * n) ** 2 + y**2)
+    a += np.sin(pi * 7 * r / m)
+
     a[0, 0] = 3
-    a[-1, 0] = 1
+    a[-1, 0] = 3
     a[4, 3] = 3
     plt.pcolormesh(x, y, a)
-    a, idxj, idxi = max_reduce_nanidx(a, h, 3)
-    plt.pcolormesh(
-        x[::h, ::h] + 0.5,
-        y[::h, ::h] + 0.5,
-        a * 0,
-        cmap="gray",
-        alpha=0.4,
-        edgecolor="k",
-    )
+
+    t0 = time.time_ns()
+    a, idxj, idxi = max_reduce_nodata(a, h, 3)
+    t1 = time.time_ns()
+    t += t1 - t0
+    print(f"time {t / 1e6} ms")
+
     ax = plt.gca()
-    plt.scatter(idxi, idxj)
+    ax.vlines(np.arange(0, n, h) - 1 / 2, -1 / 2, m - 1 / 2, color="k")
+    ax.hlines(np.arange(0, m, h) - 1 / 2, -1 / 2, n - 1 / 2, color="k")
+    plt.scatter(idxi, idxj, marker="o", c="r")
     plt.show()
-
-
-main()

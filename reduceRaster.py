@@ -3,11 +3,11 @@ import numpy as np
 from numba import jit
 
 
-@jit(nopython=True, parallel=True, cache=True)
+# @jit(nopython=True, parallel=True, cache=True)
 def max_reduce_nodata(z, h, nodata):
     """Flip Flop"""
 
-    def red(z, h, i_prev0, nodata):
+    def red(z, h, i_prev0, i_prev_m, nodata):
         # This is a reduction fonction,
         # it divide the number of columns by h
         #
@@ -41,36 +41,40 @@ def max_reduce_nodata(z, h, nodata):
                     imax = i
             return vmax, int(imax)
 
+        # i_prev is of shape (i_prev_m, z.shape[1])
+        m0 = i_prev_m
         m = z.shape[0]
-        n = int(z.shape[1] // h)
-        j_in = np.empty(n * z.shape[0], dtype=np.int_)
-        i_prev = np.empty(n * z.shape[0], dtype=np.int_)
-        zr = np.empty((n, z.shape[0]), dtype=np.double)
+        n = z.shape[1] // h
+        j_in = np.empty(n * m0, dtype=np.int_)
+        i_prev = np.empty(n * m0, dtype=np.int_)
+        zr = np.empty((n, m0), dtype=np.double)
         i0 = 0
-        for i in range(m):
+        for i in range(m0):
             for j in range(n):
                 zr[j, i], i0 = maxnan(z[i, j * h : (j + 1) * h], nodata)
-                j_in[j * m + i] = i0 + j * h
-                i_prev[j * m + i] = i_prev0[i * n * h + (j * h + i0)]
+                j_in[j * m0 + i] = i0 + j * h
+                i_prev[j * m0 + i] = i_prev0[i * n * h + (j * h + i0)]
 
         return zr, j_in, i_prev
 
     m, n = z.shape
 
-    idxj = np.empty((n * m), dtype=np.int_)
-    for i in range(m):
-        for j in range(n):
-            idxj[i * n + j] = i
+    m0, n0 = h * (m // h), h * (n // h)
 
-    idxi = np.arange(n // h * m) - 1
-    z, idxj[: n // h * m], _ = red(z, h, idxj, nodata)
-    z, idxi[: (m // h) * (n // h)], idxj[: (m // h) * (n // h)] = red(
-        z, h, idxj, nodata
+    idxj = np.empty((n0 * m0), dtype=np.int_)
+    for i in range(m0):
+        for j in range(n0):
+            idxj[i * n0 + j] = i
+
+    idxi = np.arange(n0 // h * m0)
+    z, idxj[: n0 // h * m0], _ = red(z, h, idxj, m0, nodata)
+    z, idxi[: (m0 // h) * (n0 // h)], idxj[: (m0 // h) * (n0 // h)] = red(
+        z, h, idxj, n0 // h, nodata
     )
     return (
         z,
-        idxj[: (m // h) * (n // h)],
-        idxi[: (m // h) * (n // h)],
+        idxj[: (m0 // h) * (n0 // h)],
+        idxi[: (m0 // h) * (n0 // h)],
     )
 
 
@@ -80,8 +84,8 @@ def test1():
 
     pi = np.pi
     t = 0
-    m, n = 2**10, 2**10
-    h = 2**8
+    m, n = 2**5 + 1, 2**5 + 3
+    h = 2**2
     x, y = np.meshgrid(np.arange(n), np.arange(m))
 
     r = np.sqrt(x**2 + y**2)
@@ -89,6 +93,9 @@ def test1():
 
     r = np.sqrt((x - 2 * n) ** 2 + y**2)
     a += np.sin(pi * 7 * r / m)
+
+    a = a**4
+    a -= np.random.rand(*a.shape)
 
     a[0, 0] = 3
     a[-1, 0] = 3
@@ -118,7 +125,6 @@ def test2():
 
     datasets = rio.open(dpath + f, crs="eps:2154")
     z = datasets.read(1)
-    print(np.isfortran(z))
     z = np.array(z, dtype=np.double)
     z = z[::10, ::10]
     m, n = z.shape

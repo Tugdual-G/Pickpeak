@@ -1,0 +1,20 @@
+##
+# ascii_unitTest
+#
+# @file
+# @version 0.1
+
+mfname = makeAscii.mk
+binname = ascii
+Flags = -Wall
+files = TESTascii.c ../core/asciiGridParse.c
+moptions = --no-print-directory
+
+ascii : $(files)
+	gcc -o $(binname) $(Flags) $(files)
+run :
+	make $(moptions) -f $(mfname) && ./$(binname) && python test.py ; make clean $(moptions) -f $(mfname)
+
+clean :
+	rm $(binname) binary.double
+# end

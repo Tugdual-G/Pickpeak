@@ -8,7 +8,7 @@
 mfname = makeJson.mk
 binname = json
 Flags = -Wall
-files = TESTwritejson.c ../core/writeJson.c -ljson-c
+files = ../core/array.c TESTwritejson.c ../core/writeJson.c -ljson-c
 moptions = --no-print-directory
 
 cleanf = rm $(binname) points.json || true

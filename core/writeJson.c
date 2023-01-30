@@ -1,4 +1,5 @@
 #include "writeJson.h"
+#include "array.h"
 #include <json-c/json.h>
 // #include <ogr_srs_api.h>
 #include <stdio.h>
@@ -73,10 +74,10 @@ void printJson(json_object *json) {
          json_object_to_json_string_ext(json, JSON_C_TO_STRING_PRETTY));
 }
 
-int writeJsonFile(char *filename, double *y, double *x, double *z,
-                  int npoints) {
+int writeJsonFile(char *filename, double_array y, double_array x,
+                  double_array z) {
 
-  json_object *root = createFeatureCollection(y, x, z, npoints);
+  json_object *root = createFeatureCollection(y.val, x.val, z.val, z.m * z.n);
 
   FILE *fptr = NULL;
   fptr = fopen(filename, "w");

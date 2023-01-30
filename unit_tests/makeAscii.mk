@@ -7,7 +7,7 @@
 mfname = makeAscii.mk
 binname = ascii
 Flags = -Wall
-files = TESTascii.c ../core/asciiGridParse.c
+files = TESTascii.c ../core/asciiGridParse.c ../core/array.c
 moptions = --no-print-directory
 
 cleanf = rm $(binname) binary.double || true

@@ -2,13 +2,14 @@
 #define ASCIIGRIDPARSE_H_
 
 #define N_HEADERS 6
+#include "array.h"
 
 typedef struct header header;
 typedef struct Grid Grid;
 
 void savebinary(char *filename, Grid raster);
 
-Grid *read_ASCIIgrid(char *filename);
+Grid read_ASCIIgrid(char *filename);
 
 void print_info(Grid raster);
 
@@ -30,7 +31,7 @@ struct Grid {
   double xllcenter;
   double yllcenter;
   char centered;
-  double *data;
+  double_array data;
 };
 
 #endif // ASCIIGRIDPARSE_H_

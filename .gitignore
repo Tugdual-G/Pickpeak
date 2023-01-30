@@ -4,3 +4,4 @@
 tmp/
 gatine.py
 __pycache__/
+.ccls-cache/

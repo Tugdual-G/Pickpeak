@@ -7,7 +7,7 @@ mfname = Makefile
 
 binname = pickpeak
 
-Flags = -Wall
+Flags = -Wall -g
 
 dependancies = core/parseArgs.c core/array.c core/findPeak.c \
 		core/asciiGridParse.c core/writeJson.c core/reduce.c \
@@ -15,9 +15,10 @@ dependancies = core/parseArgs.c core/array.c core/findPeak.c \
 
 moptions = --no-print-directory
 
-cleanf = rm $(binname) || true
+cleanf = (rm "$(binname)")>/dev/null 2>&1
 
-json : $(dependancies)
+pickpeak : $(dependancies)
+	$(cleanf);\
 	gcc -o $(binname) $(Flags) $(dependancies)
 
 clean :

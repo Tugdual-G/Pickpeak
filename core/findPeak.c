@@ -8,8 +8,8 @@
 #define sqrt2 1.4142
 
 int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
-                  double R, int margin, double_array *x_out, int_array *i_out,
-                  int_array *j_out) {
+                  double R, int h, int margin, double_array *x_out,
+                  int_array *i_out, int_array *j_out) {
 
   // Find isolated peaks and return their
   // positions i_out, j_out, and height, x_out.
@@ -17,17 +17,22 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
   // R , xs, ys and bbox should be integers in index coordinates
 
   int bbox[4] = {margin, dim[1] - margin, margin, dim[0] - margin};
-  int i, j, k;
+  int k = 0, c = 0;
+  int m = x_in.m;
+  int n = x_in.n;
 
   R = R * R; // Radius of exclusion in index coord, R*R for efficiency
-  int l = x_in.m * x_in.n;
+
+  // srdgs define the area research around a peak for taller peaks;
+  int srdgs = 2;
+  int l = m * n;
 
   int idx[l + 1];
-  for (i = 0; i < l + 1; i++) {
-    idx[i] = i;
+  for (k = 0; k < l + 1; k++) {
+    idx[k] = k;
   }
 
-  double *x = (double *)x_in.val;
+  double *x = x_in.val;
 
   int *i_o = (*i_out).val, // Rename for conveniance
       *j_o = (*j_out).val; // Store position of isolated peaks
@@ -38,49 +43,66 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
   double d;   // distance between points
 
   k = 0;
-  i = 0;
-  while (i < l) {
+  int i0 = 0;
+  int j0 = 0;
+  int i1 = 0;
+  int j1 = 0;
+  while (k < l) {
     trigg = 1;
-    for (j = 0; j < l; j++) {
-      d = (*(i_i + i) - *(i_i + j)) * (*(i_i + i) - *(i_i + j)) +
-          (*(j_i + i) - *(j_i + j)) * (*(j_i + i) - *(j_i + j));
-      if (d < R) {
-        // If the two summits have the same height,
-        // keep only one
-        if (*(x + i) < *(x + j)) {
-          trigg = 0;
-          break;
-        } else {
-          // idx + j can be compared againts,
-          // but it is no more considered as
-          // a potential isolated peak
-          idx[j] = idx[j + 1];
+    i0 = k / n;
+    j0 = k % n;
+    for (i1 = i0 - srdgs * (srdgs < i0);
+         i1 < ((i0 + srdgs) * (srdgs < (m - i0)) + m * (m - i0 <= srdgs));
+         i1++) {
+      for (j1 = j0 - srdgs * (srdgs < j0);
+           j1 < ((j0 + srdgs) * (srdgs < (n - j0)) + n * ((n - j0) <= srdgs));
+           j1++) {
+        d = (*(i_i + k) - *(i_i + i1 * n + j1)) *
+                (*(i_i + k) - *(i_i + i1 * n + j1)) +
+            (*(j_i + k) - *(j_i + i1 * n + j1)) *
+                (*(j_i + k) - *(j_i + i1 * n + j1));
+        if (d < R) {
+          // If the two summits have the same height,
+          // keep only one
+          if (*(x + k) < *(x + i1 * n + j1)) {
+            trigg = 0;
+            i1 = m + 1;
+            j1 = n + 1;
+          } else {
+            // idx + j can be compared againts,
+            // but it is no more considered as
+            // a potential isolated peak
+            idx[i1 * n + j1] = idx[i1 * n + j1 + 1];
+          }
         }
+        // if (j1 > n) {
+        // printf(" i1:%d j1:%d ", i1, j1);
+        //}
       }
     }
-    if (trigg == 1 && ((bbox[0] < *(j_i + i)) && (*(j_i + i) < bbox[1]) &&
-                       (bbox[2] < *(i_i + i)) && (*(i_i + i) < bbox[3]))) {
+    if (trigg == 1 && ((bbox[0] < *(j_i + k)) && (*(j_i + k) < bbox[1]) &&
+                       (bbox[2] < *(i_i + k)) && (*(i_i + k) < bbox[3]))) {
       // if (trigg == 1) {
-      *(i_o + k) = *(i_i + i);
-      *(j_o + k) = *(j_i + i);
-      *((*x_out).val + k) = *(x + i);
-      k++;
+      *(i_o + c) = *(i_i + k);
+      *(j_o + c) = *(j_i + k);
+      *((*x_out).val + c) = *(x + k);
+      c++;
     }
-    i++;
+    k++;
     // finding the next potentialy isolated peak
-    while (i != *(idx + i)) {
-      i = *(idx + i);
+    while (k != *(idx + k)) {
+      k = *(idx + k);
     }
   }
 
   // Resizing arrays
-  (*j_out).n = k;
+  (*j_out).n = c;
   (*j_out).m = 1;
-  (*i_out).n = k;
+  (*i_out).n = c;
   (*i_out).m = 1;
-  (*x_out).n = k;
+  (*x_out).n = c;
   (*x_out).m = 1;
-  return k;
+  return c;
 }
 
 void findpeak(double_array x, double R, int margin, double nodata,
@@ -98,8 +120,6 @@ void findpeak(double_array x, double R, int margin, double nodata,
   if (h > m || h > n) {
     printf("\n NOTE: The exclusion radius exceed the data extent \n");
   }
-
-  margin = (margin > 0) * (int)R;
 
   int m_o, n_o; // size of the reduction output
 
@@ -129,8 +149,9 @@ void findpeak(double_array x, double R, int margin, double nodata,
   *x_out = createdoublearray(1, m_o * n_o);
 
   int dim[2] = {m, n};
+  margin = (int)(margin > 0) * (int)R;
 
-  find_isolated(xr, ir, jr, dim, R, margin, x_out, i_out, j_out);
+  find_isolated(xr, ir, jr, dim, R, h, margin, x_out, i_out, j_out);
 
   freearray(xr.val);
   freearray(ir.val);

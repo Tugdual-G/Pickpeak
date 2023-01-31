@@ -22,7 +22,7 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
   R = R * R; // Radius of exclusion in index coord, R*R for efficiency
   int l = x_in.m * x_in.n;
 
-  int idx[l + 1]; // A trick to discard no hight enougth points
+  int idx[l + 1];
   for (i = 0; i < l + 1; i++) {
     idx[i] = i;
   }
@@ -98,6 +98,8 @@ void findpeak(double_array x, double R, int margin, double nodata,
   if (h > m || h > n) {
     printf("\n NOTE: The exclusion radius exceed the data extent \n");
   }
+
+  margin = (margin > 0) * (int)R;
 
   int m_o, n_o; // size of the reduction output
 

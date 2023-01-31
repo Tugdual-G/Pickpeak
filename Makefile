@@ -5,7 +5,7 @@
 # @version 0.1
 mfname = Makefile
 
-binname = core/pickpeak
+binname = pickpeak
 
 Flags = -Wall
 

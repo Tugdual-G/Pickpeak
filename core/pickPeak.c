@@ -63,13 +63,13 @@ int main(int argc, char *argv[]) {
 
   if (i_out.n == 0 || i_out.m == 0) {
     printf("\n No peak found \n");
-    return 0;
+    exit(1);
   }
 
   if (z_out.m != 1 || z_out.n != i_out.n || i_out.m != j_out.m ||
       i_out.n == 0 || i_out.m == 0) {
     printf("\n  Output array size error \n");
-    return 0;
+    exit(1);
   }
 
   // Transform index coordinates to real coordinates
@@ -81,4 +81,5 @@ int main(int argc, char *argv[]) {
   transform_ortho(grid, i_out, j_out, &x, &y);
 
   writeJsonFile(param.outfile, x, y, z_out);
+  return 0;
 }

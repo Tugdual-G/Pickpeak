@@ -126,7 +126,7 @@ void savebinary(char *filename, Grid raster) {
   fptr = fopen(filename, "wb");
   if (fptr == NULL) {
     printf("not written to disk");
-    exit(0);
+    exit(1);
   }
   fwrite(raster.data.val, sizeof(double), raster.ncols * raster.nrows, fptr);
   fclose(fptr);

@@ -83,7 +83,7 @@ int writeJsonFile(char *filename, double_array y, double_array x,
   fptr = fopen(filename, "w");
   if (fptr == NULL) {
     printf("\n ERROR Cannot create file %s \n", filename);
-    exit(0);
+    exit(1);
   }
   fputs(json_object_to_json_string_ext(root, JSON_C_TO_STRING_PRETTY), fptr);
   fclose(fptr);

@@ -39,9 +39,18 @@ int_array createintarray(int m, int n) {
   return array;
 }
 
-void freearray(void *arrayval) {
-  if ((arrayval) != NULL) {
-    free(arrayval);
+void freearrayDouble(double_array array) {
+  if ((array.val) != NULL) {
+    free(array.val);
+  } else {
+    printf("\n ERROR cannot free array ");
+    exit(1);
+  }
+  freecount++;
+}
+void freearrayInt(int_array array) {
+  if ((array.val) != NULL) {
+    free(array.val);
   } else {
     printf("\n ERROR cannot free array ");
     exit(1);

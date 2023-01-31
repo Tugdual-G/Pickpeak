@@ -19,7 +19,7 @@ void parse(int argc, char *argv[], struct Param *param) {
   for (i = 0; i < argc; i++) {
     if ((strcoll(argv[i], "--margin") == 0 || strcoll(argv[i], "-m") == 0) &
         (mar == 0)) {
-      if (sscanf(argv[i + 1], "%u", &(*param).margin) == 1) {
+      if (sscanf(argv[i + 1], "%d", &(*param).margin) == 1) {
 
       } else {
         printf("\n   ARGUMENR PARSING ERROR : margin \n");

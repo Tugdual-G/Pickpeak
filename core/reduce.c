@@ -179,6 +179,6 @@ void max_reduce(double_array x_in, int h, double nodata, double_array xr_out,
   reduce_along_j0(x_in, h, nodata, xr_out0, j_out0);
   reduce_along_j1(xr_out0, h, j_out0, nodata, xr_out, j_out, i_out);
 
-  freearray(xr_out0.val);
-  freearray(j_out0.val);
+  freearray(xr_out0);
+  freearray(j_out0);
 }

@@ -81,5 +81,11 @@ int main(int argc, char *argv[]) {
   transform_ortho(grid, i_out, j_out, &x, &y);
 
   writeJsonFile(param.outfile, x, y, z_out);
+  freearray(x);
+  freearray(y);
+  freearray(z_out);
+  freearray(i_out);
+  freearray(j_out);
+  freearray(grid.data);
   return 0;
 }

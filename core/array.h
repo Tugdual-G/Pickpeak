@@ -4,11 +4,18 @@
 typedef struct double_array double_array;
 typedef struct int_array int_array;
 
+#define freearray(x)                                                           \
+  _Generic((x), double_array                                                   \
+           : freearrayDouble, int_array                                        \
+           : freearrayInt, default                                             \
+           : freearrayDouble)(x)
+
 double_array createdoublearray(int m, int n);
 
 int_array createintarray(int m, int n);
 
-void freearray(void *arrayval);
+void freearrayDouble(double_array array);
+void freearrayInt(int_array array);
 
 void checkmem(void);
 

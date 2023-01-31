@@ -153,7 +153,7 @@ void findpeak(double_array x, double R, int margin, double nodata,
 
   find_isolated(xr, ir, jr, dim, R, h, margin, x_out, i_out, j_out);
 
-  freearray(xr.val);
-  freearray(ir.val);
-  freearray(jr.val);
+  freearray(xr);
+  freearray(ir);
+  freearray(jr);
 }

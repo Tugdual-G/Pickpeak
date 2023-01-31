@@ -7,8 +7,8 @@
 
 #define sqrt2 1.4142
 
-int find_isolated(double_array x_in, int_array i_in, int_array j_in, double R,
-                  int margin, double_array *x_out, int_array *i_out,
+int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
+                  double R, int margin, double_array *x_out, int_array *i_out,
                   int_array *j_out) {
 
   // Find isolated peaks and return their
@@ -16,7 +16,7 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, double R,
   //
   // R , xs, ys and bbox should be integers in index coordinates
 
-  // int bbox[4] = {margin, x_in.n - margin, margin, x_in.m - margin};
+  int bbox[4] = {margin, dim[1] - margin, margin, dim[0] - margin};
   int i, j, k;
 
   R = R * R; // Radius of exclusion in index coord, R*R for efficiency
@@ -58,9 +58,9 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, double R,
         }
       }
     }
-    // if (trigg == 1 && ((bbox[0] < *(j_i + i)) & (*(j_i + i) < bbox[1]) &
-    //(bbox[2] < *(i_i + i)) & (*(i_i + i) < bbox[3]))) {
-    if (trigg == 1) {
+    if (trigg == 1 && ((bbox[0] < *(j_i + i)) && (*(j_i + i) < bbox[1]) &&
+                       (bbox[2] < *(i_i + i)) && (*(i_i + i) < bbox[3]))) {
+      // if (trigg == 1) {
       *(i_o + k) = *(i_i + i);
       *(j_o + k) = *(j_i + i);
       *((*x_out).val + k) = *(x + i);
@@ -90,12 +90,13 @@ void findpeak(double_array x, double R, int margin, double nodata,
   int h = (int)(R / sqrt2 + 0.5); // +0.5 to round to the nearest
   if (h < 2) {
     printf("\n WARNING: R is to small in comparaison to the grid definition.\n"
-           " R < gridstep*2*sqrt(2)  \n");
+           " R < gridstep*sqrt(2)  \n");
+    h = 2;
   }
   int m = x.m, n = x.n;
 
   if (h > m || h > n) {
-    printf("\n WARNING: The exclusion radius exceed the data extent \n");
+    printf("\n NOTE: The exclusion radius exceed the data extent \n");
   }
 
   int m_o, n_o; // size of the reduction output
@@ -117,12 +118,17 @@ void findpeak(double_array x, double R, int margin, double nodata,
   double_array xr = createdoublearray(m_o, n_o);
 
   max_reduce(x, h, nodata, xr, ir, jr);
+  if (xr.n == 0 || xr.m == 0) {
+    printf("\n ERROR during reduction \n");
+  }
 
   *i_out = createintarray(1, m_o * n_o);
   *j_out = createintarray(1, m_o * n_o);
   *x_out = createdoublearray(1, m_o * n_o);
 
-  find_isolated(xr, ir, jr, R, margin, x_out, i_out, j_out);
+  int dim[2] = {m, n};
+
+  find_isolated(xr, ir, jr, dim, R, margin, x_out, i_out, j_out);
 
   freearray(xr.val);
   freearray(ir.val);

@@ -99,18 +99,22 @@ Grid read_ASCIIgrid(char *filename) {
 void maxv(Grid *grid) {
   // Finds the max value in the raster
   int i;
-  int j = 0;
-  double max;
-  double min;
-  max = *((*grid).data.val);
-  min = *((*grid).data.val);
-  for (i = 0; i < (*grid).nrows; i++) {
-    for (j = 0; j < (*grid).ncols; j++) {
-      if (*((*grid).data.val + i * (*grid).ncols + j) > max) {
-        max = *((*grid).data.val + i * (*grid).ncols + j);
-      } else if (*((*grid).data.val + i * (*grid).ncols + j) < min) {
-        min = *((*grid).data.val + i * (*grid).ncols + j);
-      }
+  double max = (*grid).NODATA_value;
+  double min = (*grid).NODATA_value;
+  double *x = ((*grid).data.val);
+  int l = (*grid).ncols * (*grid).nrows;
+
+  i = 0;
+  while ((*(x + i) == (*grid).NODATA_value) && (i < (l - 1))) {
+    i++;
+  }
+  max = *(x + i);
+  min = *(x + i);
+  for (i = i; i < l; i++) {
+    if (*(x + i) > max && (*(x + i) != (*grid).NODATA_value)) {
+      max = *(x + i);
+    } else if (*(x + i) < min && (*(x + i) != (*grid).NODATA_value)) {
+      min = *(x + i);
     }
   }
   (*grid).maxval = max;

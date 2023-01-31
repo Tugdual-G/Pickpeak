@@ -55,14 +55,20 @@ int main(int argc, char *argv[]) {
   int_array i_out;
   int_array j_out;
   double_array z_out;
-  double R = param.R / grid.cellsize;
+  double R = param.R / grid.cellsize; // R is transformed to index coordinates
 
   print_info(grid);
 
   findpeak(array, R, param.margin, grid.NODATA_value, &z_out, &i_out, &j_out);
 
-  if (z_out.m != 1 || z_out.n != i_out.n || i_out.m != j_out.m) {
-    printf("\n  array size error \n");
+  if (i_out.n == 0 || i_out.m == 0) {
+    printf("\n No peak found \n");
+    return 0;
+  }
+
+  if (z_out.m != 1 || z_out.n != i_out.n || i_out.m != j_out.m ||
+      i_out.n == 0 || i_out.m == 0) {
+    printf("\n  Output array size error \n");
     return 0;
   }
 

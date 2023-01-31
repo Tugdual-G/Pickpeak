@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
-(cd .. ; make);
-cat griddata.asc ; ../core/pickpeak -i griddata.asc -m 0 -R 5000 -o peaks.json;
-cat peaks.json | jq '.features[] | .geometry + .properties | del(.type)' -c
+data="griddata2.asc"
+margin=1
+(cd .. ; make) &&
+echo margin="$margin";
+cat "$data"; "../core/pickpeak" -i "$data" -m "$margin" -R 3 -o peaks.json;
+jq '.features[] | .geometry + .properties | del(.type)' -c < peaks.json

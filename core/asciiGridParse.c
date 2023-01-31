@@ -5,24 +5,25 @@
 #include <string.h>
 
 void print_info(Grid raster) {
+  maxv(&raster);
   printf("\n");
   printf(" ncols      : %d \n", raster.ncols);
   printf(" nrows      : %d \n", raster.nrows);
   if (raster.centered == 1) {
-    printf(" xllcenter  : %lf \n", raster.xllcenter);
-    printf(" yllcenter  : %lf \n", raster.yllcenter);
+    printf(" xllcenter  : %.2lf \n", raster.xllcenter);
+    printf(" yllcenter  : %.2lf \n", raster.yllcenter);
   } else {
-    printf(" xllcorner  : %lf \n", raster.xllcorner);
-    printf(" yllcorner  : %lf \n", raster.yllcorner);
+    printf(" xllcorner  : %.2lf \n", raster.xllcorner);
+    printf(" yllcorner  : %.2lf \n", raster.yllcorner);
   }
-  printf(" cellsize   : %lf \n", raster.cellsize);
+  printf(" cellsize   : %.2lf \n", raster.cellsize);
   if (raster.hasNODATAval == 1) {
     printf(" nodata     : not known \n");
   } else {
-    printf(" nodata     : %lf \n", raster.NODATA_value);
+    printf(" nodata     : %.2lf \n", raster.NODATA_value);
   }
-  printf(" maxval     : %lf \n", raster.maxval);
-  printf(" minval     : %lf \n", raster.minval);
+  printf(" maxval     : %.2lf \n", raster.maxval);
+  printf(" minval     : %.2lf \n", raster.minval);
 }
 
 Grid read_ASCIIgrid(char *filename) {
@@ -93,6 +94,27 @@ Grid read_ASCIIgrid(char *filename) {
     fclose(fp);
   }
   return raster;
+}
+
+void maxv(Grid *grid) {
+  // Finds the max value in the raster
+  int i;
+  int j = 0;
+  double max;
+  double min;
+  max = *((*grid).data.val);
+  min = *((*grid).data.val);
+  for (i = 0; i < (*grid).nrows; i++) {
+    for (j = 0; j < (*grid).ncols; j++) {
+      if (*((*grid).data.val + i * (*grid).ncols + j) > max) {
+        max = *((*grid).data.val + i * (*grid).ncols + j);
+      } else if (*((*grid).data.val + i * (*grid).ncols + j) < min) {
+        min = *((*grid).data.val + i * (*grid).ncols + j);
+      }
+    }
+  }
+  (*grid).maxval = max;
+  (*grid).minval = min;
 }
 
 void savebinary(char *filename, Grid raster) {

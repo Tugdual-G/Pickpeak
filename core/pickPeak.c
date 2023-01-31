@@ -9,7 +9,7 @@
 #include <string.h>
 
 void transform_ortho(Grid grid, int_array i_in, int_array j_in,
-                     double_array *y_t, double_array *x_t) {
+                     double_array *x_t, double_array *y_t) {
   //
   // Here we are just applying the simple transform
   //
@@ -18,10 +18,19 @@ void transform_ortho(Grid grid, int_array i_in, int_array j_in,
   //  | 0   0   1 |      |1|
   //
 
-  double M00 = grid.cellsize;
-  // asciiGrids
-  double M02 = grid.xllcorner;
-  double M12 = grid.yllcorner;
+  double M00;
+  double M02;
+  double M12;
+
+  if (grid.centered == 0) {
+    M00 = grid.cellsize;
+    M02 = grid.xllcorner + M00 / 2;
+    M12 = (grid.nrows) * M00 + grid.yllcorner - M00 / 2;
+  } else {
+    M00 = grid.cellsize;
+    M02 = grid.xllcorner;
+    M12 = (grid.nrows - 1) * M00 + grid.yllcorner;
+  }
 
   int l = i_in.n;
   double *x = (*x_t).val;
@@ -32,7 +41,7 @@ void transform_ortho(Grid grid, int_array i_in, int_array j_in,
   int i;
   for (i = 0; i < l; i++) {
     *(x + i) = (double)*(j_i + i) * M00 + M02;
-    *(y + i) = (double)*(i_i + i) * M00 + M12;
+    *(y + i) = -(double)*(i_i + i) * M00 + M12;
   }
 }
 
@@ -63,7 +72,7 @@ int main(int argc, char *argv[]) {
 
   printf(" peaks found      : %d \n", z_out.n);
 
-  transform_ortho(grid, i_out, j_out, &y, &x);
+  transform_ortho(grid, i_out, j_out, &x, &y);
 
   writeJsonFile(param.outfile, x, y, z_out);
 }

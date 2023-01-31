@@ -11,3 +11,7 @@ pickpeak
 .clang-format
 *.asc*
 *.qgz
+*.dbf
+*.prj
+*.shp
+*.shx

@@ -13,6 +13,8 @@ Grid read_ASCIIgrid(char *filename);
 
 void print_info(Grid raster);
 
+void maxv(Grid *grid);
+
 struct header {
   char name[25];
   double val;

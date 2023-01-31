@@ -15,3 +15,4 @@ pickpeak
 *.prj
 *.shp
 *.shx
+!griddata.asc

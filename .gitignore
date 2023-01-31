@@ -5,3 +5,6 @@ tmp/
 gatine.py
 __pycache__/
 .ccls-cache/
+*.asc
+*.json
+pickpeak

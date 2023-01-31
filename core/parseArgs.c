@@ -29,7 +29,6 @@ void parse(int argc, char *argv[], struct Param *param) {
     }
     if ((in == 0) &&
         (strcoll(argv[i], "--infile") == 0 || strcoll(argv[i], "-i") == 0)) {
-      printf("in");
       if (sscanf(argv[i + 1], "%s", (*param).infile) == 1) {
       } else {
         printf("\n  ARGUMENR PARSING ERROR : infile \n");
@@ -39,7 +38,6 @@ void parse(int argc, char *argv[], struct Param *param) {
     }
     if ((out == 0) &&
         (strcoll(argv[i], "--outfile") == 0 || strcoll(argv[i], "-o") == 0)) {
-      printf("out");
       if (sscanf(argv[i + 1], "%250s", (*param).outfile) == 1) {
       } else {
         printf("\n  ARGUMENR PARSING ERROR : outfile \n");

@@ -5,6 +5,7 @@ _**Extract isolated peaks in digital elevation models raster data**_
 For now, the script takes an ASCII Grid file as input and a radius of exclusion as parameter.
 The output is a GEOjson file containing the isolated peaks coordinates and elevation.
 A peak is chosen when there is no taller peak in its surrounding area, defined by the radius R.
+NODATA values are ignored, if specified in the ASCIIgrid header.
 You will also find a simpler implementation of the project in python, but it's a draft.
 This is a work in progress.
 
@@ -23,7 +24,10 @@ returned by the computation might include peak which are closer than R to the da
 The computation has not been tested on a set of more than 28 million points. 
 For large data set, you may have to use gdal to pre-process the files. 
 For dataset consisting in many files with little spatial extent,
-you may have to merge them if you 
+you may have to merge them. 
+
+For now, only one input file at time can be processed.
+
 ## Install and Requirements
 Compile by running make in the root directory:
 

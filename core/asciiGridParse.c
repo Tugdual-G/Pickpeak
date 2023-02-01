@@ -45,7 +45,8 @@ Grid read_ASCIIgrid(char *filename) {
   if (fp) {
     int i;
     for (i = 0; i < N_HEADERS; i++) {
-      if (fscanf(fp, "%s %lf", headrow.name, &headrow.val) == 2) {
+      if (fscanf(fp, "%24[a-zA-Z] %lf ", headrow.name, &headrow.val) == 2) {
+        printf(" %s %lf \n", headrow.name, headrow.val);
         if (strcoll(headrow.name, "ncols") == 0) {
           raster.ncols = (int)headrow.val;
         } else if (strcoll(headrow.name, "nrows") == 0) {
@@ -66,12 +67,14 @@ Grid read_ASCIIgrid(char *filename) {
           raster.yllcenter = headrow.val;
           raster.centered = 1;
         } else {
-          printf("\n HEADER NOT READEN \n");
+          printf("\n ERROR: unknown header : %s \n", headrow.name);
+          exit(1);
         }
-      };
+      }
     }
     if (raster.ncols == 0 || raster.nrows == 0) {
-      printf("ERROR array of %d cols and %d rows", raster.ncols, raster.nrows);
+      printf("ERROR array of %d cols and %d rows \n", raster.ncols,
+             raster.nrows);
       exit(1);
     }
 

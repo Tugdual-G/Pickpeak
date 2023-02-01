@@ -34,10 +34,11 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
 
   double *x = x_in.val;
 
-  int *i_o = (*i_out).val, // Rename for conveniance
-      *j_o = (*j_out).val; // Store position of isolated peaks
+  int *restrict i_o = (*i_out).val, // Rename for conveniance
+      *restrict j_o = (*j_out).val; // Store position of isolated peaks
 
-  int *i_i = i_in.val, *j_i = j_in.val; // rename for conveniance
+  int *restrict i_i = i_in.val, *restrict j_i =
+                                    j_in.val; // rename for conveniance
 
   char trigg; // =1 if the summit is isolated, else 0
   double d;   // distance between points

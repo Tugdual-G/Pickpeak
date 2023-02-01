@@ -42,11 +42,11 @@ void reduce_along_j0(double_array x_in, int h, double nodata,
   */
 
   // For readability
-  double *x = x_in.val;
+  double *restrict x = x_in.val;
 
   // Pointer to pointer to modify m and n
-  int *j_out = j_max_out.val;
-  double *xr = xr_out.val;
+  int *restrict j_out = j_max_out.val;
+  double *restrict xr = xr_out.val;
 
   // m is the number of columns of the returned zr array
   int n = x_in.n;
@@ -107,13 +107,13 @@ void reduce_along_j1(double_array x_in, int h, int_array i_original,
   */
 
   // For readability
-  double *x = x_in.val;
-  int *i_or = i_original.val;
+  double *restrict x = x_in.val;
+  int *restrict i_or = i_original.val;
 
   // Pointer to pointer to modify m and n
-  int *j_out = j_max_out.val;
-  int *i_out = i_max_out.val;
-  double *xr = xr_out.val;
+  int *restrict j_out = j_max_out.val;
+  int *restrict i_out = i_max_out.val;
+  double *restrict xr = xr_out.val;
 
   // m is the number of columns of the returned zr array
   int n = x_in.n;

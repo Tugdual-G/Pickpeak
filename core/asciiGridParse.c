@@ -45,7 +45,7 @@ Grid read_ASCIIgrid(char *filename) {
   if (fp) {
     int i;
     for (i = 0; i < N_HEADERS; i++) {
-      if (fscanf(fp, "%24[a-zA-Z] %lf ", headrow.name, &headrow.val) == 2) {
+      if (fscanf(fp, "%24[a-zA-Z_] %lf ", headrow.name, &headrow.val) == 2) {
         printf(" %s %lf \n", headrow.name, headrow.val);
         if (strcoll(headrow.name, "ncols") == 0) {
           raster.ncols = (int)headrow.val;
@@ -85,11 +85,14 @@ Grid read_ASCIIgrid(char *filename) {
     raster.maxval = raster.NODATA_value;
     raster.minval = -raster.NODATA_value;
 
+    char err[51];
     int j = 0;
     for (i = 0; i < m; i++) {
       for (j = 0; j < n; j++) {
-        if (fscanf(fp, "%lf", (array + i * n + j)) != 1) {
-          printf("\n erreur de lecture des valeurs numeriques \n");
+        if (fscanf(fp, "%lf \n", (array + i * n + j)) != 1) {
+          fscanf(fp, "%50s", err);
+          printf("\n ERROR cannot read data %s \n", err);
+          exit(1);
         }
       }
     }

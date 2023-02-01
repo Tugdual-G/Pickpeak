@@ -6,8 +6,12 @@
 int main(int argc, char *(argv[])) {
   Param param = {.margin = 0};
   parse(argc, argv, &param);
-  printf("\n margin :%d \n", param.margin);
-  printf(" R :%lf \n", param.R);
-  printf(" in :%s \n", param.infile);
-  printf(" out :%s \n", param.outfile);
+  printf("\n m: %d  ", param.margin);
+  int i;
+  printf(", in : ");
+  for (i = 0; i < param.nin; i++) {
+    printf("%s  ", param.infile[i]);
+  }
+  printf(" m: %s \n", param.outfile);
+  return 0;
 }

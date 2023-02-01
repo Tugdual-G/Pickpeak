@@ -1,13 +1,18 @@
 #ifndef PARSEARGS_H_
 #define PARSEARGS_H_
-#define Arglength 257
+#define STR1(x) #x
+#define STR(x) STR1(x)
+
+#define LENFNAME 256
+#define NFILES 50
 
 typedef struct Param Param;
 
 struct Param {
   int margin;
-  char infile[4 * Arglength];
-  char outfile[Arglength];
+  char infile[NFILES][LENFNAME + 1];
+  int nin;
+  char outfile[LENFNAME + 1];
   double R;
 };
 

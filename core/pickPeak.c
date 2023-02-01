@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
   Param param = {.margin = 0, .R = 2};
   parse(argc, argv, &param);
 
-  Grid grid = read_ASCIIgrid(param.infile);
+  Grid grid = read_ASCIIgrid(param.infile[0]);
   double_array array = grid.data;
   int_array i_out;
   int_array j_out;

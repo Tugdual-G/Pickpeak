@@ -11,9 +11,9 @@ This is a work in progress.
 ## Usage
 After compilation, you can run the executable with input data, example :
 
-    ./pickpeak -infile path/to/input/filename.asc -R 5000 -outfile outdata.json
+    ./pickpeak --infile path/to/input/filename.asc -R 5000 --outfile outdata.json
 
-The input file is specified by -i or --infile, the output by -o or outfile, -R set the radius in
+The input file is specified by -i or --infile, the output by -o or --outfile, -R set the radius in
 the spatial units of the input data.
 
 The -m or --margin option can be 1 or 0. Set to 1, a margin of width R is taken out of the output.

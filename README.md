@@ -9,7 +9,7 @@ You will also find a simpler implementation of the project in python, but it's a
 This is a work in progress.
 
 ## Usage
-After compilation, you can run the executable with input data :
+After compilation, you can run the executable with input data, example :
 
     ./pickpeak -infile path/to/input/filename.asc -R 5000 -outfile outdata.json
 

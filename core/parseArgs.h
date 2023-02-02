@@ -3,14 +3,14 @@
 #define STR1(x) #x
 #define STR(x) STR1(x)
 
-#define LENFNAME 256
+#define LENFNAME 512
 #define NFILES 50
 
 typedef struct Param Param;
 
 struct Param {
   int margin;
-  char infile[NFILES][LENFNAME + 1];
+  char *infile[NFILES];
   int nin;
   char outfile[LENFNAME + 1];
   double R;

@@ -1,4 +1,3 @@
-// #include "pickpeak.h"
 #include "array.h"
 #include "asciiGridParse.h"
 #include "findPeak.h"
@@ -9,27 +8,75 @@
 #include <string.h>
 
 void transform_ortho(Grid grid, int_array i_in, int_array j_in,
+                     double_array *x_t, double_array *y_t);
+
+int main(int argc, char *argv[]) {
+
+  Param param = {.margin = 0, .R = 2};
+  parse(argc, argv, &param);
+
+  Grid grid = read_ASCIIgrid(param.infile[0]);
+  double_array array = grid.data;
+  int_array i_out;
+  int_array j_out;
+  double_array z_out;
+  double R =
+      param.R / grid.cellsize; /* R is transformed to index coordinates */
+
+  print_info(grid);
+
+  findpeak(array, R, param.margin, grid.NODATA_value, &z_out, &i_out, &j_out);
+
+  if (i_out.n == 0 || i_out.m == 0) {
+    printf("\n No peak found \n");
+    exit(1);
+  }
+
+  if (z_out.m != 1 || z_out.n != i_out.n || i_out.m != j_out.m ||
+      i_out.n == 0 || i_out.m == 0) {
+    printf("\n Output array size error \n");
+    exit(1);
+  }
+
+  /* Transform index coordinates to real coordinates */
+  double_array x = createdoublearray(1, z_out.n);
+  double_array y = createdoublearray(1, z_out.n);
+
+  printf("%-20s%5s%d\n", " peaks found ", ":", z_out.n);
+  transform_ortho(grid, i_out, j_out, &x, &y);
+
+  writeJsonFile(param.outfile, x, y, z_out);
+  freearray(x);
+  freearray(y);
+  freearray(z_out);
+  freearray(i_out);
+  freearray(j_out);
+  freearray(grid.data);
+  return 0;
+}
+
+void transform_ortho(Grid grid, int_array i_in, int_array j_in,
                      double_array *x_t, double_array *y_t) {
-  //
-  // Here we are just applying the simple transform
-  //
-  //  |M00  0  M02|      |x|
-  //  | 0  M11 M12|   X  |y| = transformed array
-  //  | 0   0   1 |      |1|
-  //
+
+  /*
+   * Here we are just applying the simple transform
+   * |M00  0  M02|      |x|
+   * | 0  M11 M12|   X  |y| = transformed array
+   * | 0   0   1 |      |1|
+   */
 
   double M00;
   double M02;
   double M12;
 
-  if (grid.centered == 0) {
-    M00 = grid.cellsize;
-    M02 = grid.xllcorner + M00 / 2;
-    M12 = (grid.nrows) * M00 + grid.yllcorner - M00 / 2;
-  } else {
+  if (grid.centered) {
     M00 = grid.cellsize;
     M02 = grid.xllcorner;
     M12 = (grid.nrows - 1) * M00 + grid.yllcorner;
+  } else {
+    M00 = grid.cellsize;
+    M02 = grid.xllcorner + M00 / 2;
+    M12 = (grid.nrows) * M00 + grid.yllcorner - M00 / 2;
   }
 
   int l = i_in.n;
@@ -43,49 +90,4 @@ void transform_ortho(Grid grid, int_array i_in, int_array j_in,
     *(x + i) = (double)*(j_i + i) * M00 + M02;
     *(y + i) = -(double)*(i_i + i) * M00 + M12;
   }
-}
-
-int main(int argc, char *argv[]) {
-
-  Param param = {.margin = 0, .R = 2};
-  parse(argc, argv, &param);
-
-  Grid grid = read_ASCIIgrid(param.infile[0]);
-  double_array array = grid.data;
-  int_array i_out;
-  int_array j_out;
-  double_array z_out;
-  double R = param.R / grid.cellsize; // R is transformed to index coordinates
-
-  print_info(grid);
-
-  findpeak(array, R, param.margin, grid.NODATA_value, &z_out, &i_out, &j_out);
-
-  if (i_out.n == 0 || i_out.m == 0) {
-    printf("\n No peak found \n");
-    exit(1);
-  }
-
-  if (z_out.m != 1 || z_out.n != i_out.n || i_out.m != j_out.m ||
-      i_out.n == 0 || i_out.m == 0) {
-    printf("\n  Output array size error \n");
-    exit(1);
-  }
-
-  // Transform index coordinates to real coordinates
-  double_array x = createdoublearray(1, z_out.n);
-  double_array y = createdoublearray(1, z_out.n);
-
-  printf(" peaks found      : %d \n", z_out.n);
-
-  transform_ortho(grid, i_out, j_out, &x, &y);
-
-  writeJsonFile(param.outfile, x, y, z_out);
-  freearray(x);
-  freearray(y);
-  freearray(z_out);
-  freearray(i_out);
-  freearray(j_out);
-  freearray(grid.data);
-  return 0;
 }

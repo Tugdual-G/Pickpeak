@@ -12,8 +12,9 @@ moptions = --no-print-directory
 
 cleanf = rm $(binname) || true
 
-json : $(files)
+args : $(files)
 	$(cleanf) ; gcc -o $(binname) $(Flags) $(files)
+
 run :
 	make $(moptions) -f $(mfname) && ./$(binname) -m 23 --outfile out/file.json --infile fs.scd -R 434;
 	$(cleanf)

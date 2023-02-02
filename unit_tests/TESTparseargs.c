@@ -12,6 +12,7 @@ int main(int argc, char *(argv[])) {
   for (i = 0; i < param.nin; i++) {
     printf("%s  ", param.infile[i]);
   }
-  printf(" m: %s \n", param.outfile);
+  printf(" R: %lf \n", param.R);
+  printf(" o: %s \n", param.outfile);
   return 0;
 }

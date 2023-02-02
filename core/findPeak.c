@@ -18,14 +18,19 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
    */
 
   int bbox[4] = {margin, dim[1] - margin, margin, dim[0] - margin};
+
+  R = R * R; /* Radius of exclusion in index coord, R*R for efficiency */
+
   int k = 0, c = 0;
   int m = x_in.m;
   int n = x_in.n;
 
-  R = R * R; /* Radius of exclusion in index coord, R*R for efficiency */
-
-  /* srdgs define the area research around a peak for taller peaks; */
+  /*
+   * srdgs define the indicial extent of research around a peak in the input
+   * arrays
+   * */
   int srdgs = 2;
+  int lim_sup_i, lim_inf_i, lim_sup_j, lim_inf_j;
   int l = m * n;
 
   int idx[l + 1];
@@ -52,13 +57,15 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
   while (k < l) {
     trigg = 1;
     i0 = k / n;
-    j0 = k % n;
-    for (i1 = i0 - srdgs * (srdgs < i0);
-         i1 < ((i0 + srdgs) * (srdgs < (m - i0)) + m * (m - i0 <= srdgs));
-         i1++) {
-      for (j1 = j0 - srdgs * (srdgs < j0);
-           j1 < ((j0 + srdgs) * (srdgs < (n - j0)) + n * ((n - j0) <= srdgs));
-           j1++) {
+    j0 = (k % n);
+    lim_inf_i = i0 - srdgs * (srdgs < i0);
+    lim_sup_i = ((i0 + srdgs) * (srdgs < (m - i0)) + m * (m - i0 <= srdgs));
+    lim_inf_j = j0 - srdgs * (srdgs < j0);
+    lim_sup_j = ((j0 + srdgs) * (srdgs < (n - j0)) + n * ((n - j0) <= srdgs));
+
+    for (i1 = lim_inf_i; i1 < lim_sup_i; i1++) {
+      for (j1 = lim_inf_j; j1 < lim_sup_j; j1++) {
+
         d = (*(i_i + k) - *(i_i + i1 * n + j1)) *
                 (*(i_i + k) - *(i_i + i1 * n + j1)) +
             (*(j_i + k) - *(j_i + i1 * n + j1)) *

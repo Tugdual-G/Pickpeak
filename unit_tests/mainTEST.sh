@@ -9,9 +9,11 @@ for i in 0 1 ; do
     m=${margin[$i]}
     R=${radius[$i]}
     (rm "peaks.json") >/dev/null 2>&1;
-    echo margin="$m";
+    echo "########### DATA ##############"
     cat "$data";
+    echo "########## COMMAND ############"
     echo "../pickpeak" -i "$data" -m $m -R $R -o peaks.json
+    echo "########## RESULT #############"
     if ("../pickpeak" -i "$data" -m $m -R $R -o peaks.json)
     then
         jq '.features[] | .geometry + .properties | del(.type)' -c < peaks.json

@@ -46,7 +46,6 @@ Grid read_ASCIIgrid(char *filename) {
     int i;
     for (i = 0; i < N_HEADERS; i++) {
       if (fscanf(fp, "%24[a-zA-Z_] %lf ", headrow.name, &headrow.val) == 2) {
-        printf(" %s %lf \n", headrow.name, headrow.val);
         if (strcoll(headrow.name, "ncols") == 0) {
           raster.ncols = (int)headrow.val;
         } else if (strcoll(headrow.name, "nrows") == 0) {

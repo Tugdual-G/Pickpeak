@@ -20,6 +20,7 @@ void parse(int argc, char *argv[], struct Param *param) {
   (*param).nin = 0;
   char arg_symbol = '-';
   char temp_fname[LENFNAME + 1];
+  temp_fname[LENFNAME] = '\0';
   int len_fname;
   int i = 1;
   char mar = 0, rad = 0, in = 0, out = 0;

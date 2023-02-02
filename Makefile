@@ -7,7 +7,7 @@ mfname = Makefile
 
 binname = pickpeak
 
-Flags = -Wall -pedantic -g
+Flags = -Wall -pedantic -O2 -Wextra -fanalyzer
 
 dependancies = core/parseArgs.c core/array.c core/findPeak.c \
 		core/asciiGridParse.c core/writeJson.c core/reduce.c \

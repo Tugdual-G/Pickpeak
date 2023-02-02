@@ -24,13 +24,15 @@ void print_info(Grid raster) {
   }
   printf(" maxval     : %.2lf \n", raster.maxval);
   printf(" minval     : %.2lf \n", raster.minval);
+  fflush(stdout);
 }
 
 Grid read_ASCIIgrid(char *filename) {
   // declare variables
   header headrow;
   FILE *fp = NULL;
-  Grid raster;
+  Grid raster = {
+      .xllcenter = 0, .xllcorner = 0, .yllcenter = 0, .yllcorner = 0};
 
   raster.NODATA_value = -99999;
   raster.cellsize = 1;
@@ -42,62 +44,65 @@ Grid read_ASCIIgrid(char *filename) {
   raster.minval = -raster.NODATA_value;
 
   fp = fopen(filename, "r");
-  if (fp) {
-    int i;
-    for (i = 0; i < N_HEADERS; i++) {
-      if (fscanf(fp, "%24[a-zA-Z_] %lf ", headrow.name, &headrow.val) == 2) {
-        if (strcoll(headrow.name, "ncols") == 0) {
-          raster.ncols = (int)headrow.val;
-        } else if (strcoll(headrow.name, "nrows") == 0) {
-          raster.nrows = (int)headrow.val;
-        } else if (strcoll(headrow.name, "xllcorner") == 0) {
-          raster.xllcorner = headrow.val;
-        } else if (strcoll(headrow.name, "yllcorner") == 0) {
-          raster.yllcorner = headrow.val;
-        } else if (strcoll(headrow.name, "cellsize") == 0) {
-          raster.cellsize = headrow.val;
-        } else if (strcoll(headrow.name, "NODATA_value") == 0) {
-          raster.NODATA_value = headrow.val;
-          raster.hasNODATAval = 0;
-        } else if (strcoll(headrow.name, "xllcenter") == 0) {
-          raster.xllcenter = headrow.val;
-          raster.centered = 1;
-        } else if (strcoll(headrow.name, "yllcenter") == 0) {
-          raster.yllcenter = headrow.val;
-          raster.centered = 1;
-        } else {
-          printf("\n ERROR: unknown header : %s \n", headrow.name);
-          exit(1);
-        }
-      }
-    }
-    if (raster.ncols == 0 || raster.nrows == 0) {
-      printf("ERROR array of %d cols and %d rows \n", raster.ncols,
-             raster.nrows);
-      exit(1);
-    }
-
-    int m = raster.nrows, n = raster.ncols;
-    raster.data = createdoublearray(m, n);
-    double *array = raster.data.val;
-
-    raster.maxval = raster.NODATA_value;
-    raster.minval = -raster.NODATA_value;
-
-    char err[51];
-    int j = 0;
-    for (i = 0; i < m; i++) {
-      for (j = 0; j < n; j++) {
-        if (fscanf(fp, "%lf \n", (array + i * n + j)) != 1) {
-          fscanf(fp, "%50s", err);
-          printf("\n ERROR cannot read data %s \n", err);
-          exit(1);
-        }
-      }
-    }
-
-    fclose(fp);
+  if (fp == NULL) {
+    printf("\n ERROR can't open file %s \n", filename);
+    exit(1);
   }
+
+  int i;
+  for (i = 0; i < N_HEADERS; i++) {
+    if (fscanf(fp, "%24[a-zA-Z_] %lf ", headrow.name, &headrow.val) == 2) {
+      if (strcoll(headrow.name, "ncols") == 0) {
+        raster.ncols = (int)headrow.val;
+      } else if (strcoll(headrow.name, "nrows") == 0) {
+        raster.nrows = (int)headrow.val;
+      } else if (strcoll(headrow.name, "xllcorner") == 0) {
+        raster.xllcorner = headrow.val;
+      } else if (strcoll(headrow.name, "yllcorner") == 0) {
+        raster.yllcorner = headrow.val;
+      } else if (strcoll(headrow.name, "cellsize") == 0) {
+        raster.cellsize = headrow.val;
+      } else if (strcoll(headrow.name, "NODATA_value") == 0) {
+        raster.NODATA_value = headrow.val;
+        raster.hasNODATAval = 0;
+      } else if (strcoll(headrow.name, "xllcenter") == 0) {
+        raster.xllcenter = headrow.val;
+        raster.centered = 1;
+      } else if (strcoll(headrow.name, "yllcenter") == 0) {
+        raster.yllcenter = headrow.val;
+        raster.centered = 1;
+      } else {
+        printf("\n ERROR: unknown header : %s \n", headrow.name);
+        exit(1);
+      }
+    }
+  }
+  if (raster.ncols == 0 || raster.nrows == 0) {
+    printf("ERROR array of %d cols and %d rows \n", raster.ncols, raster.nrows);
+    exit(1);
+  }
+
+  int m = raster.nrows, n = raster.ncols;
+  raster.data = createdoublearray(m, n);
+  double *array = raster.data.val;
+
+  raster.maxval = raster.NODATA_value;
+  raster.minval = -raster.NODATA_value;
+
+  char err[51];
+  int j = 0;
+  for (i = 0; i < m; i++) {
+    for (j = 0; j < n; j++) {
+      if (fscanf(fp, "%lf \n", (array + i * n + j)) != 1) {
+        fscanf(fp, "%50s", err);
+        printf("\n ERROR cannot read data %s \n", err);
+        exit(1);
+      }
+    }
+  }
+
+  fclose(fp);
+
   return raster;
 }
 

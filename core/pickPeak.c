@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
       param.R / grid.cellsize; /* R is transformed to index coordinates */
 
   print_info(grid);
+  fflush(stdout);
 
   findpeak(array, R, param.margin, grid.NODATA_value, &z_out, &i_out, &j_out);
 

@@ -31,7 +31,7 @@ void parse(int argc, char *argv[], struct Param *param) {
       if (sscanf(argv[i], "%1d", &(*param).margin) == 1) {
         i++;
       } else {
-        printf("\n   ARGUMENR PARSING ERROR : margin \n");
+        printf("\n ARGUMENR PARSING ERROR : margin \n");
         exit(1);
       }
     } else if ((in == 0) && (strcoll(argv[i], "--infile") == 0 ||
@@ -56,12 +56,8 @@ void parse(int argc, char *argv[], struct Param *param) {
           in = 1;
           i++;
           (*param).nin++;
-          if (i >= NFILES) {
-            printf(
-                "\n  WARNING number of input files exceed " STR(NFILES) " \n");
-          }
         } else {
-          printf("\n  ARGUMENR PARSING ERROR : infile \n");
+          printf("\n ARGUMENR PARSING ERROR : infile \n");
           exit(1);
         }
       }
@@ -72,7 +68,7 @@ void parse(int argc, char *argv[], struct Param *param) {
         out = 1;
         i++;
       } else {
-        printf("\n  ARGUMENR PARSING ERROR : outfile \n");
+        printf("\n ARGUMENR PARSING ERROR : outfile \n");
         exit(1);
       }
     } else if ((rad == 0) && (strcoll(argv[i], "--radius") == 0 ||
@@ -82,7 +78,7 @@ void parse(int argc, char *argv[], struct Param *param) {
         rad = 1;
         i++;
       } else {
-        printf("\n  ARGUMENR PARSING ERROR : radius \n");
+        printf("\n ARGUMENR PARSING ERROR : radius \n");
         exit(1);
       }
     } else {

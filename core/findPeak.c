@@ -52,8 +52,6 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
   k = 0;
   int i0 = 0;
   int j0 = 0;
-  int i1 = 0;
-  int j1 = 0;
   while (k < l) {
     trigg = 1;
     i0 = k / n;
@@ -63,8 +61,8 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
     lim_inf_j = j0 - srdgs * (srdgs < j0);
     lim_sup_j = ((j0 + srdgs) * (srdgs < (n - j0)) + n * ((n - j0) <= srdgs));
 
-    for (i1 = lim_inf_i; i1 < lim_sup_i; i1++) {
-      for (j1 = lim_inf_j; j1 < lim_sup_j; j1++) {
+    for (int i1 = lim_inf_i; i1 < lim_sup_i; i1++) {
+      for (int j1 = lim_inf_j; j1 < lim_sup_j; j1++) {
 
         d = (*(i_i + k) - *(i_i + i1 * n + j1)) *
                 (*(i_i + k) - *(i_i + i1 * n + j1)) +

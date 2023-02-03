@@ -7,27 +7,28 @@
 
 #define sqrt2 1.4142
 
-int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
-                  double R, int margin, double_array *x_out, int_array *i_out,
-                  int_array *j_out);
+int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
+                  unsigned int dim[2], double R, unsigned int margin,
+                  double_array *x_out, uint_array *i_out, uint_array *j_out);
 
-void findpeak(double_array x, double R, int margin, double nodata,
-              double_array *x_out, int_array *i_out, int_array *j_out) {
+void findpeak(double_array x, double R, unsigned int margin, double nodata,
+              double_array *x_out, uint_array *i_out, uint_array *j_out) {
 
   /* R is in index units */
-  int h = (int)(R / sqrt2 + 0.5); /* +0.5 to round to the nearest */
+  unsigned int h =
+      (unsigned int)(R / sqrt2 + 0.5); /* +0.5 to round to the nearest */
   if (h < 2) {
     printf("\n WARNING: R is to small in comparaison to the grid definition.\n"
-           " R < gridstep*sqrt(2)  \n");
+           " R < gridstep*sqrt(2) \n");
     h = 2;
   }
-  int m = x.m, n = x.n;
+  unsigned int m = x.m, n = x.n;
 
   if (h > m || h > n) {
     printf("\n NOTE: The exclusion radius exceed the data extent \n");
   }
 
-  int m_o, n_o; /* size of the reduction output */
+  unsigned int m_o, n_o; /* size of the reduction output */
 
   if (m % h == 0) {
     m_o = m / h;
@@ -41,8 +42,8 @@ void findpeak(double_array x, double R, int margin, double nodata,
   }
   printf("%-20s%5s%.2f (grid steps)\n", " Exclusion Radius ", ":", R);
   printf("%-20s%5s%d\n", " first pass step ", ":", h);
-  int_array ir = createintarray(m_o, n_o);
-  int_array jr = createintarray(m_o, n_o);
+  uint_array ir = create_uintarray(m_o, n_o);
+  uint_array jr = create_uintarray(m_o, n_o);
   double_array xr = createdoublearray(m_o, n_o);
 
   max_reduce(x, h, nodata, xr, ir, jr);
@@ -50,12 +51,13 @@ void findpeak(double_array x, double R, int margin, double nodata,
     printf("\n ERROR during reduction \n");
   }
 
-  *i_out = createintarray(1, m_o * n_o);
-  *j_out = createintarray(1, m_o * n_o);
+  *i_out = create_uintarray(1, m_o * n_o);
+  *j_out = create_uintarray(1, m_o * n_o);
   *x_out = createdoublearray(1, m_o * n_o);
 
-  int dim[2] = {m, n};
-  margin = (int)(margin > 0) * (int)R;
+  unsigned int dim[2] = {m, n};
+
+  margin = (unsigned int)((margin > 0) * R);
 
   find_isolated(xr, ir, jr, dim, R, margin, x_out, i_out, j_out);
 
@@ -64,9 +66,9 @@ void findpeak(double_array x, double R, int margin, double nodata,
   freearray(jr);
 }
 
-int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
-                  double R, int margin, double_array *x_out, int_array *i_out,
-                  int_array *j_out) {
+int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
+                  unsigned int dim[2], double R, unsigned int margin,
+                  double_array *x_out, uint_array *i_out, uint_array *j_out) {
 
   /*
    * Find isolated peaks and return their
@@ -74,41 +76,37 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
    * R , xs, ys and bbox should be integers in index coordinates
    */
 
-  int bbox[4] = {margin, dim[1] - margin, margin, dim[0] - margin};
+  unsigned int bbox[4] = {margin, dim[1] - margin, margin, dim[0] - margin};
 
   R = R * R; /* Radius of exclusion in index coord, R*R for efficiency */
 
-  int k = 0, c = 0;
-  int m = x_in.m;
-  int n = x_in.n;
-
+  unsigned int m = x_in.m;
+  unsigned int n = x_in.n;
   /*
    * srdgs define the indicial extent of research around a peak in the input
    * arrays
    * */
-  int srdgs = 2;
-  int lim_sup_i, lim_inf_i, lim_sup_j, lim_inf_j;
-  int l = m * n;
+  unsigned int srdgs = 2;
+  unsigned int lim_sup_i, lim_inf_i, lim_sup_j, lim_inf_j;
 
-  int idx[l + 1];
-  for (k = 0; k < l + 1; k++) {
-    idx[k] = k;
+  unsigned int l = m * n;
+  unsigned int idx[l + 1];
+  for (unsigned int i = 0; i < l + 1; i++) {
+    idx[i] = i;
   }
 
   double *x = x_in.val;
 
-  int *restrict i_o = (*i_out).val, /* Rename for conveniance */
+  unsigned int *restrict i_o = (*i_out).val, /* Rename for conveniance */
       *restrict j_o = (*j_out).val; /* Store position of isolated peaks */
 
-  int *restrict i_i = i_in.val;
-  int *restrict j_i = j_in.val; /* rename for conveniance */
+  unsigned int *restrict i_i = i_in.val;
+  unsigned int *restrict j_i = j_in.val; /* rename for conveniance */
 
   char trigg; /* =1 if the summit is isolated, else 0 */
   double d;   /* distance between points */
 
-  k = 0;
-  int i0 = 0;
-  int j0 = 0;
+  unsigned int k = 0, count_ispeak = 0, i0 = 0, j0 = 0;
   while (k < l) {
     trigg = 1;
     i0 = k / n;
@@ -118,8 +116,8 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
     lim_inf_j = j0 - srdgs * (srdgs < j0);
     lim_sup_j = ((j0 + srdgs) * (srdgs < (n - j0)) + n * ((n - j0) <= srdgs));
 
-    for (int i1 = lim_inf_i; i1 < lim_sup_i; i1++) {
-      for (int j1 = lim_inf_j; j1 < lim_sup_j; j1++) {
+    for (unsigned int i1 = lim_inf_i; i1 < lim_sup_i; i1++) {
+      for (unsigned int j1 = lim_inf_j; j1 < lim_sup_j; j1++) {
 
         d = (*(i_i + k) - *(i_i + i1 * n + j1)) *
                 (*(i_i + k) - *(i_i + i1 * n + j1)) +
@@ -143,10 +141,10 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
     }
     if (trigg && ((bbox[0] < *(j_i + k)) && (*(j_i + k) < bbox[1]) &&
                   (bbox[2] < *(i_i + k)) && (*(i_i + k) < bbox[3]))) {
-      *(i_o + c) = *(i_i + k);
-      *(j_o + c) = *(j_i + k);
-      *((*x_out).val + c) = *(x + k);
-      c++;
+      *(i_o + count_ispeak) = *(i_i + k);
+      *(j_o + count_ispeak) = *(j_i + k);
+      *((*x_out).val + count_ispeak) = *(x + k);
+      count_ispeak++;
     }
     k++;
     /* finding the next potentialy isolated peak */
@@ -156,11 +154,11 @@ int find_isolated(double_array x_in, int_array i_in, int_array j_in, int dim[2],
   }
 
   /* Resizing arrays */
-  (*j_out).n = c;
+  (*j_out).n = count_ispeak;
   (*j_out).m = 1;
-  (*i_out).n = c;
+  (*i_out).n = count_ispeak;
   (*i_out).m = 1;
-  (*x_out).n = c;
+  (*x_out).n = count_ispeak;
   (*x_out).m = 1;
-  return c;
+  return count_ispeak;
 }

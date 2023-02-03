@@ -1,56 +1,41 @@
 #include "asciiGridParse.h"
 #include "array.h"
+#include "parseArgs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define STR1(x) #x
+#define STR(x) STR1(x)
 
-void print_info(Grid raster) {
-  maxv(&raster);
-  printf("\n");
-  printf(" ncols      : %d \n", raster.ncols);
-  printf(" nrows      : %d \n", raster.nrows);
-  if (raster.centered == 1) {
-    printf(" xllcenter  : %.2lf \n", raster.xllcenter);
-    printf(" yllcenter  : %.2lf \n", raster.yllcenter);
-  } else {
-    printf(" xllcorner  : %.2lf \n", raster.xllcorner);
-    printf(" yllcorner  : %.2lf \n", raster.yllcorner);
-  }
-  printf(" cellsize   : %.2lf \n", raster.cellsize);
-  if (raster.hasNODATAval == 1) {
-    printf(" nodata     : not known \n");
-  } else {
-    printf(" nodata     : %.2lf \n", raster.NODATA_value);
-  }
-  printf(" maxval     : %.2lf \n", raster.maxval);
-  printf(" minval     : %.2lf \n", raster.minval);
-  fflush(stdout);
-}
-
-Grid read_ASCIIgrid(char *filename) {
-  // declare variables
+Grid read_ASCII_header(char *filename) {
+  /* Read and store the discretisation parameters given
+   * in the header of the ASCII file */
   header headrow;
   FILE *fp = NULL;
   Grid raster = {
-      .xllcenter = 0, .xllcorner = 0, .yllcenter = 0, .yllcorner = 0};
+      .ncols = 0,
+      .nrows = 0,
+      .xllcenter = 0,
+      .xllcorner = 0,
+      .yllcenter = 0,
+      .yllcorner = 0,
+      .NODATA_value = -99999,
+      .hasNODATAval = 0,
+      .centered = 0,
+      .f_position = 0,
+      .data.val = NULL,
+  };
 
-  raster.NODATA_value = -99999;
-  raster.cellsize = 1;
-  raster.nrows = 0;
-  raster.ncols = 0;
-  raster.data.val = NULL;
-  raster.hasNODATAval = 1;
+  /* In case max and min are not attributed */
   raster.maxval = raster.NODATA_value;
-  raster.minval = -raster.NODATA_value;
+  raster.minval = raster.NODATA_value;
 
   fp = fopen(filename, "r");
   if (fp == NULL) {
     printf("\n ERROR can't open file %s \n", filename);
     exit(1);
   }
-
-  int i;
-  for (i = 0; i < N_HEADERS; i++) {
+  for (unsigned int i = 0; i < N_HEADERS; i++) {
     if (fscanf(fp, "%24[a-zA-Z_] %lf ", headrow.name, &headrow.val) == 2) {
       if (strcoll(headrow.name, "ncols") == 0) {
         raster.ncols = (int)headrow.val;
@@ -82,39 +67,86 @@ Grid read_ASCIIgrid(char *filename) {
     exit(1);
   }
 
-  int m = raster.nrows, n = raster.ncols;
-  raster.data = createdoublearray(m, n);
-  double *array = raster.data.val;
-
-  raster.maxval = raster.NODATA_value;
-  raster.minval = -raster.NODATA_value;
-
-  char err[51];
-  int j = 0;
-  for (i = 0; i < m; i++) {
-    for (j = 0; j < n; j++) {
-      if (fscanf(fp, "%lf \n", (array + i * n + j)) != 1) {
-        fscanf(fp, "%50s", err);
-        printf("\n ERROR cannot read data %s \n", err);
-        exit(1);
-      }
-    }
+  if ((raster.f_position = ftell(fp)) == -1) {
+    printf("\n ERROR cannot find position in file \n");
+    exit(1);
   }
-
+  raster.maxval = raster.NODATA_value;
+  raster.minval = raster.NODATA_value;
   fclose(fp);
-
   return raster;
 }
 
+void read_ASCII_data(Grid *grid, char fname[]) {
+
+  /* Reading the ascii raster data and storing
+   * it in an array*/
+  FILE *fp = NULL;
+  fp = fopen(fname, "r");
+  if (fp == NULL) {
+    printf("\n ERROR can't open file %s \n", fname);
+    exit(1);
+  }
+
+  /* Set the file pointer a the right place in the file
+   * to start reading the data, and not the header
+   */
+  if (fseek(fp, (*grid).f_position, SEEK_SET) != 0) {
+    printf("\n ERROR: cannot find file stream position \n");
+    exit(1);
+  }
+
+  unsigned int m = (*grid).nrows, n = (*grid).ncols;
+  (*grid).data = createdoublearray(m, n);
+  double *array = (*grid).data.val;
+
+  /* Assuming EOF is not equal to 1  */
+  unsigned int i = 0;
+  while (fscanf(fp, "%lf ", (array + i)) == 1) {
+    ++i;
+  }
+  if (i != m * n) {
+    printf("\n DATA PARSING ERROR \n");
+    exit(1);
+  }
+
+  fclose(fp);
+}
+
+void print_info(Grid *raster) {
+  maxv(raster);
+  printf("\n");
+  printf(" ncols      : %d \n", (*raster).ncols);
+  printf(" nrows      : %d \n", (*raster).nrows);
+  if ((*raster).centered == 1) {
+    printf(" xllcenter  : %.2lf \n", (*raster).xllcenter);
+    printf(" yllcenter  : %.2lf \n", (*raster).yllcenter);
+  } else {
+    printf(" xllcorner  : %.2lf \n", (*raster).xllcorner);
+    printf(" yllcorner  : %.2lf \n", (*raster).yllcorner);
+  }
+  printf(" cellsize   : %.2lf \n", (*raster).cellsize);
+  if ((*raster).hasNODATAval == 1) {
+    printf(" nodata     : unknown \n");
+  } else {
+    printf(" nodata     : %.2lf \n", (*raster).NODATA_value);
+  }
+  printf(" maxval     : %.2lf \n", (*raster).maxval);
+  printf(" minval     : %.2lf \n", (*raster).minval);
+  fflush(stdout);
+}
+
 void maxv(Grid *grid) {
-  // Finds the max value in the raster
-  int i;
+  /* Finds the max value in the raster */
   double max = (*grid).NODATA_value;
   double min = (*grid).NODATA_value;
-  double *x = ((*grid).data.val);
-  int l = (*grid).ncols * (*grid).nrows;
+  double *x = (*grid).data.val;
+  unsigned int l = (*grid).ncols * (*grid).nrows;
 
-  i = 0;
+  /* getting rid of the eventual nodata values at the begining
+   * of the parsing, to initialize max and min correctly
+   */
+  unsigned int i = 0;
   while ((*(x + i) == (*grid).NODATA_value) && (i < (l - 1))) {
     i++;
   }

@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define STR1(x) #x
+#define STR(x) STR1(x)
 
 void parse(int argc, char *argv[], struct Param *param) {
   /*

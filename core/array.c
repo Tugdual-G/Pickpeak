@@ -5,10 +5,10 @@
 static int createcount = 0;
 static int freecount = 0;
 
-double_array createdoublearray(int m, int n) {
+double_array createdoublearray(unsigned int m, unsigned int n) {
   // create 1d or 2d arrays, 1d have shape (0,n)
-  if (n == 0 || m == 0) {
-    printf("\n ERROR cannot create array with shape 0 \n");
+  if (n <= 0 || m <= 0) {
+    printf("\n ERROR cannot create array type double with shape 0 \n");
     exit(1);
   }
   double_array array = {.m = m, .n = n};
@@ -22,15 +22,16 @@ double_array createdoublearray(int m, int n) {
   return array;
 }
 
-int_array createintarray(int m, int n) {
+uint_array create_uintarray(unsigned int m, unsigned int n) {
   // create 1d or 2d arrays, 1d have shape (0,n)
-  if (n == 0 || m == 0) {
-    printf("\n ERROR cannot create array with shape 0 \n");
+  if (n <= 0 || m <= 0) {
+    printf("\n ERROR cannot create integer array with shape 0 \n");
     exit(1);
   }
-  int_array array = {.m = m, .n = n};
+  uint_array array = {.m = m, .n = n};
   array.val = NULL;
-  array.val = (int *)malloc(sizeof(int) * (size_t)m * (size_t)n);
+  array.val =
+      (unsigned int *)malloc(sizeof(unsigned int) * (size_t)m * (size_t)n);
   if (array.val == NULL) {
     printf("\n ERROR allocation failled");
     exit(1);
@@ -48,7 +49,7 @@ void freearrayDouble(double_array array) {
   }
   freecount++;
 }
-void freearrayInt(int_array array) {
+void freearrayInt(uint_array array) {
   if ((array.val) != NULL) {
     free(array.val);
   } else {

@@ -21,6 +21,10 @@ pickpeak : $(dependancies)
 	$(cleanf);\
 	gcc -o $(binname) $(Flags) $(dependancies)
 
+debug : $(dependancies)
+	$(cleanf);\
+	gcc -o $(binname) $(Flags) -g $(dependancies)
+
 clean :
 	$(cleanf)
 

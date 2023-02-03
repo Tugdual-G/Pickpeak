@@ -1,28 +1,31 @@
 #ifndef ASCIIGRIDPARSE_H_
 #define ASCIIGRIDPARSE_H_
+#include "array.h"
 
 #define N_HEADERS 6
-#include "array.h"
+#define LENNAME 25
 
 typedef struct header header;
 typedef struct Grid Grid;
 
 void savebinary(char *filename, Grid raster);
 
-Grid read_ASCIIgrid(char *filename);
+Grid read_ASCII_header(char *filename);
 
-void print_info(Grid raster);
+void read_ASCII_data(Grid *grid, char fname[]);
+
+void print_info(Grid *raster);
 
 void maxv(Grid *grid);
 
 struct header {
-  char name[25];
+  char name[LENNAME];
   double val;
 };
 
 struct Grid {
-  int ncols;
-  int nrows;
+  unsigned int ncols;
+  unsigned int nrows;
   double xllcorner;
   double yllcorner;
   double cellsize;
@@ -34,6 +37,7 @@ struct Grid {
   double yllcenter;
   char centered;
   double_array data;
+  long int f_position;
 };
 
 #endif // ASCIIGRIDPARSE_H_

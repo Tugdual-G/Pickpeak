@@ -3,9 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void maxnan(double *x, int lenx, double nodata, int *imax, double *vmax) {
+void maxnan(double *x, unsigned int lenx, double nodata, unsigned int *imax,
+            double *vmax) {
   /* Finds the max value in (x) (x+lenx) */
-  int i = 0;
+  unsigned int i = 0;
   while (*(x + i) == nodata && i < lenx) {
     i++;
   }
@@ -19,8 +20,8 @@ void maxnan(double *x, int lenx, double nodata, int *imax, double *vmax) {
   }
 }
 
-void reduce_along_j0(double_array x_in, int h, double nodata,
-                     double_array xr_out, int_array j_max_out) {
+void reduce_along_j0(double_array x_in, unsigned int h, double nodata,
+                     double_array xr_out, uint_array j_max_out) {
 
   /*
   This is a reduction fonction,
@@ -45,15 +46,15 @@ void reduce_along_j0(double_array x_in, int h, double nodata,
   double *restrict x = x_in.val;
 
   /* Pointer to pointer to modify m and n */
-  int *restrict j_out = j_max_out.val;
+  unsigned int *restrict j_out = j_max_out.val;
   double *restrict xr = xr_out.val;
 
   /* m is the number of columns of the returned zr array */
-  int n = x_in.n;
-  int m = x_in.m;
+  unsigned int n = x_in.n;
+  unsigned int m = x_in.m;
 
   /* In case the domain is not divisible by h */
-  int nxr;
+  unsigned int nxr;
   if (n % h == 0) {
     nxr = n / h;
   } else {
@@ -65,9 +66,9 @@ void reduce_along_j0(double_array x_in, int h, double nodata,
   }
 
   double vmax;
-  int imax;
+  unsigned int imax;
 
-  int i, j;
+  unsigned int i, j;
   for (i = 0; i < m; i++) {
     for (j = 0; j < n / h; j++) {
       maxnan((x + i * n + j * h), h, nodata, &imax, &vmax);
@@ -82,9 +83,9 @@ void reduce_along_j0(double_array x_in, int h, double nodata,
   }
 }
 
-void reduce_along_j1(double_array x_in, int h, int_array i_original,
-                     double nodata, double_array xr_out, int_array i_max_out,
-                     int_array j_max_out) {
+void reduce_along_j1(double_array x_in, unsigned int h, uint_array i_original,
+                     double nodata, double_array xr_out, uint_array i_max_out,
+                     uint_array j_max_out) {
 
   /*
   This is a reduction fonction,
@@ -107,19 +108,19 @@ void reduce_along_j1(double_array x_in, int h, int_array i_original,
 
   /* For readability */
   double *restrict x = x_in.val;
-  int *restrict i_or = i_original.val;
+  unsigned int *restrict i_or = i_original.val;
 
   /* Pointer to pointer to modify m and n */
-  int *restrict j_out = j_max_out.val;
-  int *restrict i_out = i_max_out.val;
+  unsigned int *restrict j_out = j_max_out.val;
+  unsigned int *restrict i_out = i_max_out.val;
   double *restrict xr = xr_out.val;
 
   /* m is the number of columns of the returned zr array */
-  int n = x_in.n;
-  int m = x_in.m;
+  unsigned int n = x_in.n;
+  unsigned int m = x_in.m;
 
   /* In case the domain is not divisible by h */
-  int nxr;
+  unsigned int nxr;
   if (n % h == 0) {
     nxr = n / h;
   } else {
@@ -131,10 +132,10 @@ void reduce_along_j1(double_array x_in, int h, int_array i_original,
   }
 
   double vmax;
-  int imax;
+  unsigned int imax;
   /* Shape xr (,) : x.m, x.n/h +(x.n%h)/(x.n%h) */
 
-  int i, j;
+  unsigned int i, j;
   for (i = 0; i < m; i++) {
     for (j = 0; j < n / h; j++) {
       maxnan((x + i * n + j * h), h, nodata, &imax, &vmax);
@@ -151,12 +152,12 @@ void reduce_along_j1(double_array x_in, int h, int_array i_original,
   }
 }
 
-void max_reduce(double_array x_in, int h, double nodata, double_array xr_out,
-                int_array i_out, int_array j_out) {
-  int m = x_in.m, n = x_in.n;
+void max_reduce(double_array x_in, unsigned int h, double nodata,
+                double_array xr_out, uint_array i_out, uint_array j_out) {
+  unsigned int m = x_in.m, n = x_in.n;
 
   /* Final shape of the reduced array */
-  int mf, nf;
+  unsigned int mf, nf;
   if (m % h == 0) {
     mf = m / h;
   } else {
@@ -172,7 +173,7 @@ void max_reduce(double_array x_in, int h, double nodata, double_array xr_out,
   }
 
   double_array xr_out0 = createdoublearray(nf, m);
-  int_array j_out0 = createintarray(nf, m);
+  uint_array j_out0 = create_uintarray(nf, m);
 
   /* The first time i_out is useless */
   reduce_along_j0(x_in, h, nodata, xr_out0, j_out0);

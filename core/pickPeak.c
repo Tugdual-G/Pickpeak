@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 
   clock_t begin = clock();
 
-  read_ASCII_data(&grid, param.infile[0]);
+  read_ASCII_data_fast(&grid, param.infile[0]);
 
   clock_t end = clock();
   float t_total = ((float)(end - begin)) / CLOCKS_PER_SEC;

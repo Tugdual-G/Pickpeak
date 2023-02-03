@@ -14,6 +14,8 @@ Grid read_ASCII_header(char *filename);
 
 void read_ASCII_data(Grid *grid, char fname[]);
 
+void read_ASCII_data_fast(Grid *grid, char fname[]);
+
 void print_info(Grid *raster);
 
 void maxv(Grid *grid);

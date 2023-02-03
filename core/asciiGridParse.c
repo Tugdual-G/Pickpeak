@@ -79,41 +79,6 @@ Grid read_ASCII_header(char *filename) {
   return raster;
 }
 
-// void read_ASCII_data(Grid *grid, char fname[]) {
-//
-///* Reading the ascii raster data and storing
-//* it in an array*/
-// FILE *fp = NULL;
-// fp = fopen(fname, "r");
-// if (fp == NULL) {
-// printf("\n ERROR can't open file %s \n", fname);
-// exit(1);
-//}
-//
-///* Set the file pointer a the right place in the file
-//* to start reading the data, and not the header
-//*/
-// if (fseek(fp, (*grid).f_position, SEEK_SET) != 0) {
-// printf("\n ERROR: cannot find file stream position \n");
-// exit(1);
-//}
-//
-// unsigned int m = (*grid).nrows, n = (*grid).ncols;
-//(*grid).data = createdoublearray(m, n);
-// double *array = (*grid).data.val;
-//
-///* Assuming EOF is not equal to 1  */
-// unsigned int i = 0;
-// while (fscanf(fp, "%lf ", (array + i)) == 1) {
-//++i;
-//}
-// if (i != m * n) {
-// printf("\n DATA PARSING ERROR \n");
-// exit(1);
-//}
-//
-// fclose(fp);
-//}
 void read_ASCII_data(Grid *grid, char fname[]) {
 
   /* Reading the ascii raster data and storing
@@ -138,35 +103,10 @@ void read_ASCII_data(Grid *grid, char fname[]) {
   double *array = (*grid).data.val;
 
   /* Assuming EOF is not equal to 1  */
-
-  char temp_str[max_str_length + 1] = {'\0'};
-  unsigned int i = 0, j = 0;
-
-  char flag = EOF + 1;
-  j = 0;
-  while (flag != EOF) {
-    while (((temp_str[j] = getc(fp)) != '\n') && (temp_str[j] != ' ') &&
-           (temp_str[j] != EOF) && (j < max_str_length)) {
-      j++;
-    }
-    flag = temp_str[j];
-    temp_str[j] = '\0';
-    *(array + i) = atof(temp_str);
-
-    while ((flag != '\n') && (flag != ' ') && (flag != EOF)) {
-      flag = getc(fp);
-    }
-
-    // printf(" %s, ", temp_str);
-
-    while (((flag == '\n') || (flag == ' ')) && (flag != EOF)) {
-      flag = getc(fp);
-    }
-    temp_str[0] = flag;
-    j = 1;
-    i++;
+  unsigned int i = 0;
+  while (fscanf(fp, "%lf ", (array + i)) == 1) {
+    ++i;
   }
-
   if (i != m * n) {
     printf("\n DATA PARSING ERROR \n");
     exit(1);
@@ -175,8 +115,87 @@ void read_ASCII_data(Grid *grid, char fname[]) {
   fclose(fp);
 }
 
+void read_ASCII_data_fast(Grid *grid, char fname[]) {
+
+  /* Reading the ascii raster data and storing
+   * it in an array*/
+  FILE *fp = NULL;
+  fp = fopen(fname, "rb");
+  if (fp == NULL) {
+    printf("\n ERROR can't open file %s \n", fname);
+    exit(1);
+  }
+
+  if (fseek(fp, 0, SEEK_END) != 0) {
+    printf("\n ERROR: cannot find file stream position \n");
+    exit(1);
+  }
+
+  /* Getting the size of the data we are about to read */
+  size_t data_size = (size_t)((ftell(fp)) - (*grid).f_position);
+
+  /* Set the file stream a the right place
+   * to start reading the data, and not the header
+   */
+  if (fseek(fp, (*grid).f_position, SEEK_SET) != 0) {
+    printf("\n ERROR: cannot find file stream position \n");
+    exit(1);
+  }
+
+  char *data;
+  unsigned int m = (*grid).nrows, n = (*grid).ncols;
+  (*grid).data = createdoublearray(m, n);
+  double *array = (*grid).data.val;
+
+  char temp_str[max_str_length + 1] = {'\0'};
+  unsigned int i = 0, j = 0, k = 0;
+
+  data = NULL;
+  data = (char *)malloc(sizeof(char) * data_size);
+  if (data == NULL) {
+    printf("\n ERROR cannot allocate memory \n");
+    exit(1);
+  }
+
+  if (fread(data, sizeof(char), data_size, fp) != data_size) {
+    printf("\n ERROR cannot read data \n");
+    exit(1);
+  }
+  k = 0;
+  while (k < data_size) {
+    j = 0;
+    while ((data[k] != '\n') && (data[k] != ' ') && (j < max_str_length) &&
+           (k < data_size)) {
+      temp_str[j] = data[k];
+      j++;
+      k++;
+    }
+
+    temp_str[j] = '\0';
+    *(array + i) = atof(temp_str);
+
+    while ((data[k] != '\n') && (data[k] != ' ') && (k < data_size)) {
+      k++;
+    }
+
+    while (((data[k] == '\n') || (data[k] == ' ')) && (k < data_size)) {
+      k++;
+    }
+    i++;
+  }
+  free(data);
+
+  if (i != m * n) {
+    printf("\n DATA PARSING ERROR, %d elements readen instead of %d \n", i,
+           m * n);
+    exit(1);
+  }
+
+  fclose(fp);
+}
+
 void print_info(Grid *raster) {
-  maxv(raster);
+  // maxv(raster);
   printf("\n");
   printf(" ncols      : %d \n", (*raster).ncols);
   printf(" nrows      : %d \n", (*raster).nrows);

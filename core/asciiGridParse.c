@@ -118,7 +118,13 @@ void read_ASCII_data(Grid *grid, char fname[]) {
 void read_ASCII_data_fast(Grid *grid, char fname[]) {
 
   /* Reading the ascii raster data and storing
-   * it in an array*/
+   * it in an array
+   *
+   * This function loads the data into the RAM
+   * Which is way faster than using multiples
+   * fread
+   *
+   * */
   FILE *fp = NULL;
   fp = fopen(fname, "rb");
   if (fp == NULL) {
@@ -195,7 +201,7 @@ void read_ASCII_data_fast(Grid *grid, char fname[]) {
 }
 
 void print_info(Grid *raster) {
-  // maxv(raster);
+  maxv(raster);
   printf("\n");
   printf(" ncols      : %d \n", (*raster).ncols);
   printf(" nrows      : %d \n", (*raster).nrows);

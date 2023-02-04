@@ -1,3 +1,21 @@
+/*
+** This module take care of text data input comforming to
+** the AAIGrid – Arc/Info ASCII Grid format.
+**
+** The module read the header information and the data
+** in separates functions.
+**
+** The parsing of the data can be done by directly
+** loading all the data in the RAM, or by the use of
+** a slower method but preserving RAM, wich can be
+** usefull, e.g. if the computation is run
+** in parallel.
+** NOTE fread is mean to be buffered,
+** so i am not sure that it is the main cause of
+** the performance change.
+**
+*/
+
 #include "asciiGridParse.h"
 #include "array.h"
 #include "parseArgs.h"
@@ -5,15 +23,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define STR1(x) #x
+
+#define STR1(x) #x /* Macro to stringify constants */
 #define STR(x) STR1(x)
-#define max_str_length 16
+#define MAX_SIGNIFICANT_DIGITS 16
 
 Grid read_ASCII_header(char *filename) {
-  /* Read and store the discretisation parameters given
-   * in the header of the ASCII file */
-  header headrow;
-  FILE *fp = NULL;
+  /*
+   * Read and store the metadata given
+   * in the header of the ASCII file.
+   * The metadata parsing is not case sensitive.
+   * Otherwise the identification is strict.
+   * */
+
+  header temp_header_row;
   Grid raster = {
       .ncols = 0,
       .nrows = 0,
@@ -32,34 +55,37 @@ Grid read_ASCII_header(char *filename) {
   raster.maxval = raster.NODATA_value;
   raster.minval = raster.NODATA_value;
 
+  FILE *fp = NULL;
   fp = fopen(filename, "r");
   if (fp == NULL) {
     printf("\n ERROR can't open file %s \n", filename);
     exit(1);
   }
-  for (unsigned int i = 0; i < N_HEADERS; i++) {
-    if (fscanf(fp, "%24[a-zA-Z_] %lf ", headrow.name, &headrow.val) == 2) {
-      if (strcoll(headrow.name, "ncols") == 0) {
-        raster.ncols = (int)headrow.val;
-      } else if (strcoll(headrow.name, "nrows") == 0) {
-        raster.nrows = (int)headrow.val;
-      } else if (strcoll(headrow.name, "xllcorner") == 0) {
-        raster.xllcorner = headrow.val;
-      } else if (strcoll(headrow.name, "yllcorner") == 0) {
-        raster.yllcorner = headrow.val;
-      } else if (strcoll(headrow.name, "cellsize") == 0) {
-        raster.cellsize = headrow.val;
-      } else if (strcoll(headrow.name, "NODATA_value") == 0) {
-        raster.NODATA_value = headrow.val;
+  /* Checking for every possible header information */
+  for (unsigned int i = 0; i < MAX_META; i++) {
+    if (fscanf(fp, "%24[a-zA-Z_] %lf ", temp_header_row.name,
+               &temp_header_row.val) == 2) {
+      if (strcoll(temp_header_row.name, "ncols") == 0) {
+        raster.ncols = (int)temp_header_row.val;
+      } else if (strcoll(temp_header_row.name, "nrows") == 0) {
+        raster.nrows = (int)temp_header_row.val;
+      } else if (strcoll(temp_header_row.name, "xllcorner") == 0) {
+        raster.xllcorner = temp_header_row.val;
+      } else if (strcoll(temp_header_row.name, "yllcorner") == 0) {
+        raster.yllcorner = temp_header_row.val;
+      } else if (strcoll(temp_header_row.name, "cellsize") == 0) {
+        raster.cellsize = temp_header_row.val;
+      } else if (strcoll(temp_header_row.name, "NODATA_value") == 0) {
+        raster.NODATA_value = temp_header_row.val;
         raster.hasNODATAval = 0;
-      } else if (strcoll(headrow.name, "xllcenter") == 0) {
-        raster.xllcenter = headrow.val;
+      } else if (strcoll(temp_header_row.name, "xllcenter") == 0) {
+        raster.xllcenter = temp_header_row.val;
         raster.centered = 1;
-      } else if (strcoll(headrow.name, "yllcenter") == 0) {
-        raster.yllcenter = headrow.val;
+      } else if (strcoll(temp_header_row.name, "yllcenter") == 0) {
+        raster.yllcenter = temp_header_row.val;
         raster.centered = 1;
       } else {
-        printf("\n ERROR: unknown header : %s \n", headrow.name);
+        printf("\n ERROR: unknown header : %s \n", temp_header_row.name);
         exit(1);
       }
     }
@@ -69,6 +95,7 @@ Grid read_ASCII_header(char *filename) {
     exit(1);
   }
 
+  /* Keeping the starting position of the data in the file */
   if ((raster.f_position = ftell(fp)) == -1) {
     printf("\n ERROR cannot find position in file \n");
     exit(1);
@@ -82,7 +109,12 @@ Grid read_ASCII_header(char *filename) {
 void read_ASCII_data(Grid *grid, char fname[]) {
 
   /* Reading the ascii raster data and storing
-   * it in an array*/
+   * it in an array.
+   *
+   * NOTE : This method is slow since it probably has to
+   * make more sistem call in the background than
+   * the read_ASII_data_fast method.
+   */
   FILE *fp = NULL;
   fp = fopen(fname, "r");
   if (fp == NULL) {
@@ -98,10 +130,12 @@ void read_ASCII_data(Grid *grid, char fname[]) {
     exit(1);
   }
 
+  /* Place to store the data */
   unsigned int m = (*grid).nrows, n = (*grid).ncols;
   (*grid).data = createdoublearray(m, n);
   double *array = (*grid).data.val;
 
+  /* Data parsing */
   /* Assuming EOF is not equal to 1  */
   unsigned int i = 0;
   while (fscanf(fp, "%lf ", (array + i)) == 1) {
@@ -111,7 +145,6 @@ void read_ASCII_data(Grid *grid, char fname[]) {
     printf("\n DATA PARSING ERROR \n");
     exit(1);
   }
-
   fclose(fp);
 }
 
@@ -120,11 +153,18 @@ void read_ASCII_data_fast(Grid *grid, char fname[]) {
   /* Reading the ascii raster data and storing
    * it in an array
    *
-   * This function loads the data into the RAM
+   * NOTE : This function loads the data into the RAM
    * Which is way faster than using multiples
-   * fread
+   * fread.
    *
-   * */
+   * NOTE : If there is more figures by value
+   *  in the data than MAX_SIGNIFICANT_DIGITS,
+   *  they are discarded.
+   *
+   *
+   * WARNING : the full fille is loaded in one chunk.
+   */
+
   FILE *fp = NULL;
   fp = fopen(fname, "rb");
   if (fp == NULL) {
@@ -132,6 +172,7 @@ void read_ASCII_data_fast(Grid *grid, char fname[]) {
     exit(1);
   }
 
+  /* In order to measure the size of the file */
   if (fseek(fp, 0, SEEK_END) != 0) {
     printf("\n ERROR: cannot find file stream position \n");
     exit(1);
@@ -141,37 +182,43 @@ void read_ASCII_data_fast(Grid *grid, char fname[]) {
   size_t data_size = (size_t)((ftell(fp)) - (*grid).f_position);
 
   /* Set the file stream a the right place
-   * to start reading the data, and not the header
+   * to start reading the data
    */
   if (fseek(fp, (*grid).f_position, SEEK_SET) != 0) {
     printf("\n ERROR: cannot find file stream position \n");
     exit(1);
   }
 
-  char *data;
+  /* Place to store the data in it's final form */
   unsigned int m = (*grid).nrows, n = (*grid).ncols;
   (*grid).data = createdoublearray(m, n);
   double *array = (*grid).data.val;
 
-  char temp_str[max_str_length + 1] = {'\0'};
+  /* Temp storage for the ascii form of a data point */
+  char temp_str[MAX_SIGNIFICANT_DIGITS + 1] = {'\0'};
   unsigned int i = 0, j = 0, k = 0;
 
+  /* storage of the full file in it's original format */
+  char *data;
   data = NULL;
   data = (char *)malloc(sizeof(char) * data_size);
   if (data == NULL) {
     printf("\n ERROR cannot allocate memory \n");
     exit(1);
   }
-
   if (fread(data, sizeof(char), data_size, fp) != data_size) {
     printf("\n ERROR cannot read data \n");
     exit(1);
   }
+  free(data);
+
+  /* Start of the parsing process */
   k = 0;
   while (k < data_size) {
+    /* Scaning values one by one */
     j = 0;
-    while ((data[k] != '\n') && (data[k] != ' ') && (j < max_str_length) &&
-           (k < data_size)) {
+    while ((data[k] != '\n') && (data[k] != ' ') &&
+           (j < MAX_SIGNIFICANT_DIGITS) && (k < data_size)) {
       temp_str[j] = data[k];
       j++;
       k++;
@@ -180,16 +227,17 @@ void read_ASCII_data_fast(Grid *grid, char fname[]) {
     temp_str[j] = '\0';
     *(array + i) = atof(temp_str);
 
+    /* going through the eventual remainings figures */
     while ((data[k] != '\n') && (data[k] != ' ') && (k < data_size)) {
       k++;
     }
 
+    /* Going through the space or newline caracters separing the data values */
     while (((data[k] == '\n') || (data[k] == ' ')) && (k < data_size)) {
       k++;
     }
     i++;
   }
-  free(data);
 
   if (i != m * n) {
     printf("\n DATA PARSING ERROR, %d elements readen instead of %d \n", i,

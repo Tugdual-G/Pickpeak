@@ -1,3 +1,13 @@
+
+/*
+** This is the main source file for the application.
+**
+** The program takes one ASCII grid as input and writes a
+** GEOjson file to disk, containing the position and elevation of the
+** isolated peaks found in the grid.
+**
+*/
+
 #include "pickPeak.h"
 #include "array.h"
 #include "asciiGridParse.h"
@@ -8,17 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-/*
-** This is the main source file for the application.
-**
-** The program takes one ASCII grid as input and writes a
-** GEOjson file to disk, containing the position and elevation of the
-** isolated peaks found in the grid.
-**
-**
-**
-*/
 
 int main(int argc, char *argv[]) {
   /*

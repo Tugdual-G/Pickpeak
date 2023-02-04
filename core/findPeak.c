@@ -9,7 +9,8 @@
 
 int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
                   unsigned int dim[2], double R, unsigned int margin,
-                  double_array *x_out, uint_array *i_out, uint_array *j_out);
+                  double nodata, double_array *x_out, uint_array *i_out,
+                  uint_array *j_out);
 
 void findpeak(double_array x, double R, unsigned int margin, double nodata,
               double_array *x_out, uint_array *i_out, uint_array *j_out) {
@@ -17,6 +18,7 @@ void findpeak(double_array x, double R, unsigned int margin, double nodata,
   /* R is in index units */
   unsigned int h =
       (unsigned int)(R / sqrt2 + 0.5); /* +0.5 to round to the nearest */
+
   if (h < 2) {
     printf("\n WARNING: R is to small in comparaison to the grid definition.\n"
            " R < gridstep*sqrt(2) \n");
@@ -30,16 +32,9 @@ void findpeak(double_array x, double R, unsigned int margin, double nodata,
 
   unsigned int m_o, n_o; /* size of the reduction output */
 
-  if (m % h == 0) {
-    m_o = m / h;
-  } else {
-    m_o = m / h + 1;
-  }
-  if (n % h == 0) {
-    n_o = n / h;
-  } else {
-    n_o = n / h + 1;
-  }
+  m_o = (m % h == 0) ? m / h : m / h + 1;
+  n_o = (n % h == 0) ? n / h : n / h + 1;
+
   printf("%-20s%5s%.2f (grid steps)\n", " Exclusion Radius ", ":", R);
   printf("%-20s%5s%d\n", " first pass step ", ":", h);
   uint_array ir = create_uintarray(m_o, n_o);
@@ -59,7 +54,7 @@ void findpeak(double_array x, double R, unsigned int margin, double nodata,
 
   margin = (unsigned int)((margin > 0) * R);
 
-  find_isolated(xr, ir, jr, dim, R, margin, x_out, i_out, j_out);
+  find_isolated(xr, ir, jr, dim, R, margin, nodata, x_out, i_out, j_out);
 
   freearray(xr);
   freearray(ir);
@@ -68,7 +63,8 @@ void findpeak(double_array x, double R, unsigned int margin, double nodata,
 
 int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
                   unsigned int dim[2], double R, unsigned int margin,
-                  double_array *x_out, uint_array *i_out, uint_array *j_out) {
+                  double nodata, double_array *x_out, uint_array *i_out,
+                  uint_array *j_out) {
 
   /*
    * Find isolated peaks and return their
@@ -90,7 +86,7 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
   unsigned int lim_sup_i, lim_inf_i, lim_sup_j, lim_inf_j;
 
   unsigned int l = m * n;
-  unsigned int idx[l + 1];
+  unsigned int idx[l + 1]; /* NOTE warning variable Length array */
   for (unsigned int i = 0; i < l + 1; i++) {
     idx[i] = i;
   }
@@ -107,14 +103,19 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
   double d;   /* distance between points */
 
   unsigned int k = 0, count_ispeak = 0, i0 = 0, j0 = 0;
+  while (*(x + k) == nodata) {
+    k++;
+  }
   while (k < l) {
     trigg = 1;
     i0 = k / n;
     j0 = (k % n);
-    lim_inf_i = i0 - srdgs * (srdgs < i0);
-    lim_sup_i = ((i0 + srdgs) * (srdgs < (m - i0)) + m * (m - i0 <= srdgs));
-    lim_inf_j = j0 - srdgs * (srdgs < j0);
-    lim_sup_j = ((j0 + srdgs) * (srdgs < (n - j0)) + n * ((n - j0) <= srdgs));
+
+    lim_inf_i = (srdgs < i0) ? i0 : i0 - srdgs;
+    lim_sup_i = (srdgs < (m - i0)) ? (i0 + srdgs) : m;
+
+    lim_inf_j = (srdgs < j0) ? j0 : j0 - srdgs;
+    lim_sup_j = (srdgs < (n - j0)) ? (j0 + srdgs) : n;
 
     for (unsigned int i1 = lim_inf_i; i1 < lim_sup_i; i1++) {
       for (unsigned int j1 = lim_inf_j; j1 < lim_sup_j; j1++) {
@@ -126,7 +127,12 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
         if (d < R) {
           /* If the two summits have the same height, */
           /* keep only one */
-          if (*(x + k) < *(x + i1 * n + j1)) {
+          /* I prefer to check nodata here instead
+           * of just before computing d,
+           * to reduce memory transactions.
+           */
+          if ((*(x + k) < *(x + i1 * n + j1)) &&
+              (*(x + i1 * n + j1) != nodata)) {
             trigg = 0;
             i1 = m + 1;
             j1 = n + 1;
@@ -148,8 +154,12 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
     }
     k++;
     /* finding the next potentialy isolated peak */
-    while (k != *(idx + k)) {
+
+    while ((k != *(idx + k))) {
       k = *(idx + k);
+    }
+    while ((*(x + k) == nodata) && (k < l)) {
+      k++;
     }
   }
 

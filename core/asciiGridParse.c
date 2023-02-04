@@ -210,8 +210,8 @@ void read_ASCII_data_fast(Grid *grid, char fname[]) {
     printf("\n ERROR cannot read data \n");
     exit(1);
   }
-  free(data);
 
+  fclose(fp);
   /* Start of the parsing process */
   k = 0;
   while (k < data_size) {
@@ -245,7 +245,7 @@ void read_ASCII_data_fast(Grid *grid, char fname[]) {
     exit(1);
   }
 
-  fclose(fp);
+  free(data);
 }
 
 void print_info(Grid *raster) {

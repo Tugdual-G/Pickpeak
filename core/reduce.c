@@ -1,23 +1,37 @@
+/*
+** This module apply a reduction operation on the input array.
+** The shape of the input array (m,n) is reduced to (m/h + (1), n/h + (1)).
+** The reduction operation consist of keeping the max value in the stencil.
+*/
 #include "reduce.h"
 #include "array.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-void maxnan(double *x, unsigned int lenx, double nodata, unsigned int *imax,
-            double *vmax) {
-  /* Finds the max value in (x) (x+lenx) */
-  unsigned int i = 0;
-  while (*(x + i) == nodata && i < lenx) {
-    i++;
+void max_reduce(double_array x_in, unsigned int h, double nodata,
+                double_array xr_out, uint_array i_out, uint_array j_out) {
+
+  unsigned int m = x_in.m, n = x_in.n;
+
+  /* Final shape of the reduced array */
+  unsigned int mf, nf;
+  mf = (m % h == 0) ? m / h : m / h + 1;
+
+  nf = (n % h == 0) ? n / h : n / h + 1;
+
+  if (xr_out.n * xr_out.m < mf * nf) {
+    printf("\n ERROR the output array, xr, is to small \n");
   }
-  *vmax = *(x + i);
-  *imax = i;
-  for (i = i; i < lenx; i++) {
-    if (*vmax < *(x + i) && *(x + i) != nodata) {
-      *vmax = *(x + i);
-      *imax = i;
-    }
-  }
+
+  double_array xr_out0 = createdoublearray(nf, m);
+  uint_array j_out0 = create_uintarray(nf, m);
+
+  /* The first time i_out is useless */
+  reduce_along_j0(x_in, h, nodata, xr_out0, j_out0);
+  reduce_along_j1(xr_out0, h, j_out0, nodata, xr_out, j_out, i_out);
+
+  freearray(xr_out0);
+  freearray(j_out0);
 }
 
 void reduce_along_j0(double_array x_in, unsigned int h, double nodata,
@@ -28,38 +42,34 @@ void reduce_along_j0(double_array x_in, unsigned int h, double nodata,
   it divide the number of columns by h
 
   This fonction takes an array z and process each row by
-  taking the max value in the h first columns, then jump h
-  columns and reapeat.
+  taking the max value in the h first columns, then reapeat
+  for every set of colums [h*j, (j+1)*h[ .
 
-  The max of each batch of cell is written to a transposed array zr,
-  index information are transposed to.
+  The max of each set of cells is written to a transposed array zr.
+  The index information are transposed to.
 
   i_prev0 has the same shape as z, it carries the orginal index i of z
   before the first time z was processed. Thus no information is lost
   on the position of the max values.
 
   The best case is: z % h = 0
-  in this case some max values could be skiped at the edge.
+
+  This function is almost the same as reduce_along_j1,
+  except that it do not need to return as much information.
   */
 
   /* For readability */
   double *restrict x = x_in.val;
-
-  /* Pointer to pointer to modify m and n */
   unsigned int *restrict j_out = j_max_out.val;
   double *restrict xr = xr_out.val;
 
-  /* m is the number of columns of the returned zr array */
+  /* m is also the number of columns of the returned zr array */
   unsigned int n = x_in.n;
   unsigned int m = x_in.m;
 
   /* In case the domain is not divisible by h */
   unsigned int nxr;
-  if (n % h == 0) {
-    nxr = n / h;
-  } else {
-    nxr = n / h + 1;
-  }
+  nxr = (n % h == 0) ? n / h : n / h + 1;
 
   if (xr_out.n * xr_out.m < m * nxr) {
     printf("\n ERROR the output array, xr, is to small in 0\n");
@@ -92,18 +102,17 @@ void reduce_along_j1(double_array x_in, unsigned int h, uint_array i_original,
   it divide the number of columns by h
 
   This fonction takes an array z and process each row by
-  taking the max value in the h first columns, then jump h
-  columns and reapeat.
+  taking the max value in the h first columns, then reapeat
+  for every set of colums [h*j, (j+1)*h[ .
 
-  The max of each batch of cell is written to a transposed array zr,
-  index information are transposed to.
+  The max of each set of cells is written to a transposed array zr.
+  The index information are transposed to.
 
   i_prev0 has the same shape as z, it carries the orginal index i of z
   before the first time z was processed. Thus no information is lost
   on the position of the max values.
 
   The best case is: z % h = 0
-  in this case some max values could be skiped at the edge.
   */
 
   /* For readability */
@@ -121,11 +130,7 @@ void reduce_along_j1(double_array x_in, unsigned int h, uint_array i_original,
 
   /* In case the domain is not divisible by h */
   unsigned int nxr;
-  if (n % h == 0) {
-    nxr = n / h;
-  } else {
-    nxr = n / h + 1;
-  }
+  nxr = (n % h == 0) ? n / h : n / h + 1;
 
   if (xr_out.n * xr_out.m < m * nxr) {
     printf("\n ERROR the output array, xr, is to small in 1\n");
@@ -152,33 +157,19 @@ void reduce_along_j1(double_array x_in, unsigned int h, uint_array i_original,
   }
 }
 
-void max_reduce(double_array x_in, unsigned int h, double nodata,
-                double_array xr_out, uint_array i_out, uint_array j_out) {
-  unsigned int m = x_in.m, n = x_in.n;
-
-  /* Final shape of the reduced array */
-  unsigned int mf, nf;
-  if (m % h == 0) {
-    mf = m / h;
-  } else {
-    mf = m / h + 1;
+inline void maxnan(double *x, unsigned int lenx, double nodata,
+                   unsigned int *imax, double *vmax) {
+  /* Finds the max value in (x) (x+lenx) */
+  unsigned int i = 0;
+  while (*(x + i) == nodata && i < lenx) {
+    i++;
   }
-  if (n % h == 0) {
-    nf = n / h;
-  } else {
-    nf = n / h + 1;
+  *vmax = *(x + i);
+  *imax = i;
+  for (i = i; i < lenx; i++) {
+    if (*vmax < *(x + i) && *(x + i) != nodata) {
+      *vmax = *(x + i);
+      *imax = i;
+    }
   }
-  if (xr_out.n * xr_out.m < mf * nf) {
-    printf("\n ERROR the output array, xr, is to small \n");
-  }
-
-  double_array xr_out0 = createdoublearray(nf, m);
-  uint_array j_out0 = create_uintarray(nf, m);
-
-  /* The first time i_out is useless */
-  reduce_along_j0(x_in, h, nodata, xr_out0, j_out0);
-  reduce_along_j1(xr_out0, h, j_out0, nodata, xr_out, j_out, i_out);
-
-  freearray(xr_out0);
-  freearray(j_out0);
 }

@@ -5,13 +5,16 @@
 #define STR1(x) #x
 #define STR(x) STR1(x)
 
+void print_help(char filename[]);
+
 void parse(int argc, char *argv[], struct Param *param) {
   /*
   ** This is the command-line argument parsing function for pickpeak
   */
 
-  if (argc < 7) {
+  if (argc < 2) {
     printf("\n Please provide enougth arguments \n\n");
+    print_help("core/help.txt");
     exit(1);
   } else if (argc > 6 + LENFNAME) {
     printf(
@@ -27,7 +30,7 @@ void parse(int argc, char *argv[], struct Param *param) {
   int i = 1;
   char mar = 0, rad = 0, in = 0, out = 0;
 
-  while (i < argc - 1) {
+  while (i < argc) {
     if ((strcoll(argv[i], "--margin") == 0 || strcoll(argv[i], "-m") == 0) &
         !mar) {
       i++;
@@ -84,6 +87,9 @@ void parse(int argc, char *argv[], struct Param *param) {
         printf("\n ARGUMENR PARSING ERROR : radius \n");
         exit(1);
       }
+    } else if (strcoll(argv[i], "--help") == 0) {
+      print_help("core/help.txt");
+      exit(1);
     } else {
       i++;
     }
@@ -92,4 +98,18 @@ void parse(int argc, char *argv[], struct Param *param) {
     printf("\n  ARGUMENR PARSING ERROR  help : --help \n");
     exit(1);
   }
+}
+
+void print_help(char filename[]) {
+  FILE *fp = NULL;
+  fp = fopen(filename, "r");
+  if (fp == NULL) {
+    printf("\n ERROR cannot read help text file \n");
+    exit(1);
+  }
+  char line[256] = {'\0'};
+  while (fgets(line, 255, fp) != NULL) {
+    fputs(line, stdout);
+  }
+  fclose(fp);
 }

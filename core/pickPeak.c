@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
   clock_t end = clock();
   float t_total = ((float)(end - begin)) / CLOCKS_PER_SEC;
-  printf("%-20s%5s%.3f\n", " data-reading time ", ":", t_total);
+  printf("%-20s%5s%.3fs\n", " data-reading time ", ":", t_total);
 
   print_info(&grid);
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
            &j_out);
   end = clock();
   t_total = ((float)(end - begin)) / CLOCKS_PER_SEC;
-  printf("%-20s%5s%.3f\n", " computing time ", ":", t_total);
+  printf("%-20s%5s%.5fs\n", " computing time ", ":", t_total);
 
   if (i_out.n == 0 || i_out.m == 0) {
     printf("\n No peak found \n");

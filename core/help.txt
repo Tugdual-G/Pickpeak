@@ -1,0 +1,17 @@
+
+pickpeak finds isolated peaks in ASCII grid raster data and
+return the position and elevation of the peaks in geojson format.
+
+Usage: ./pickpeak [OPTION] -R RADIUS -i INPUT_FILES... -o OUTPUT_FILE
+
+        -i , --infile  = INPUT FILES NAMES
+
+        -o , --outfile = OUTPUT FILE NAME
+
+        -R   = ISOLATION RADIUS
+
+        -m , --margin  = [0 ,1]     margin at the border of the data
+                                    extent. No peaks is returned
+                                    inside the margin.
+
+        --help

@@ -111,10 +111,10 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
     i0 = k / n;
     j0 = (k % n);
 
-    lim_inf_i = (srdgs < i0) ? i0 : i0 - srdgs;
+    lim_inf_i = (srdgs < i0) ? i0 - srdgs : i0;
     lim_sup_i = (srdgs < (m - i0)) ? (i0 + srdgs) : m;
 
-    lim_inf_j = (srdgs < j0) ? j0 : j0 - srdgs;
+    lim_inf_j = (srdgs < j0) ? j0 - srdgs : j0;
     lim_sup_j = (srdgs < (n - j0)) ? (j0 + srdgs) : n;
 
     for (unsigned int i1 = lim_inf_i; i1 < lim_sup_i; i1++) {

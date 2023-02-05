@@ -7,10 +7,10 @@
 
 #define sqrt2 1.4142
 
-int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
-                  unsigned int dim[2], double R, unsigned int margin,
-                  double nodata, double_array *x_out, uint_array *i_out,
-                  uint_array *j_out);
+static int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
+                         unsigned int dim[], double R, unsigned int margin,
+                         double nodata, double_array *x_out, uint_array *i_out,
+                         uint_array *j_out);
 
 void findpeak(double_array x, double R, unsigned int margin, double nodata,
               double_array *x_out, uint_array *i_out, uint_array *j_out) {
@@ -61,13 +61,13 @@ void findpeak(double_array x, double R, unsigned int margin, double nodata,
   freearray(jr);
 }
 
-int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
-                  unsigned int dim[2], double R, unsigned int margin,
-                  double nodata, double_array *x_out, uint_array *i_out,
-                  uint_array *j_out) {
+static int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
+                         unsigned int dim[], double R, unsigned int margin,
+                         double nodata, double_array *x_out, uint_array *i_out,
+                         uint_array *j_out) {
 
   /*
-   * Find isolated peaks and return their
+   * Find isolated peaks in the previously reduced data and return their
    * positions i_out, j_out, and height, x_out.
    * R , xs, ys and bbox should be integers in index coordinates
    */
@@ -78,6 +78,7 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
 
   unsigned int m = x_in.m;
   unsigned int n = x_in.n;
+
   /*
    * srdgs define the indicial extent of research around a peak in the input
    * arrays
@@ -91,10 +92,11 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
     idx[i] = i;
   }
 
+  /* Just some short-hands */
   double *x = x_in.val;
-
-  unsigned int *restrict i_o = (*i_out).val, /* Rename for conveniance */
-      *restrict j_o = (*j_out).val; /* Store position of isolated peaks */
+  /* Store position of isolated peaks */
+  unsigned int *restrict i_o = (*i_out).val;
+  unsigned int *restrict j_o = (*j_out).val;
 
   unsigned int *restrict i_i = i_in.val;
   unsigned int *restrict j_i = j_in.val; /* rename for conveniance */
@@ -102,7 +104,7 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
   char trigg; /* =1 if the summit is isolated, else 0 */
   double d;   /* distance between points */
 
-  unsigned int k = 0, count_ispeak = 0, i0 = 0, j0 = 0;
+  unsigned int k = 0, count_peaks = 0, i0 = 0, j0 = 0;
   while (*(x + k) == nodata) {
     k++;
   }
@@ -111,6 +113,7 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
     i0 = k / n;
     j0 = (k % n);
 
+    /* Defining the stencil of peaks comparaison */
     lim_inf_i = (srdgs < i0) ? i0 - srdgs : i0;
     lim_sup_i = (srdgs < (m - i0)) ? (i0 + srdgs) : m;
 
@@ -134,6 +137,7 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
           if ((*(x + k) < *(x + i1 * n + j1)) &&
               (*(x + i1 * n + j1) != nodata)) {
             trigg = 0;
+            /* break both loop */
             i1 = m + 1;
             j1 = n + 1;
           } else {
@@ -147,28 +151,33 @@ int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
     }
     if (trigg && ((bbox[0] < *(j_i + k)) && (*(j_i + k) < bbox[1]) &&
                   (bbox[2] < *(i_i + k)) && (*(i_i + k) < bbox[3]))) {
-      *(i_o + count_ispeak) = *(i_i + k);
-      *(j_o + count_ispeak) = *(j_i + k);
-      *((*x_out).val + count_ispeak) = *(x + k);
-      count_ispeak++;
+      *(i_o + count_peaks) = *(i_i + k);
+      *(j_o + count_peaks) = *(j_i + k);
+      *((*x_out).val + count_peaks) = *(x + k);
+      count_peaks++;
     }
     k++;
-    /* finding the next potentialy isolated peak */
 
-    while ((k != *(idx + k))) {
-      k = *(idx + k);
-    }
-    while ((*(x + k) == nodata) && (k < l)) {
-      k++;
+    /* finding the next potentialy isolated peak */
+    trigg = 1;
+    while (trigg) {
+      while ((k != *(idx + k))) {
+        k = *(idx + k);
+      }
+      trigg = 0;
+      while ((*(x + k) == nodata) && (k < l)) {
+        k++;
+        trigg = 1;
+      }
     }
   }
 
   /* Resizing arrays */
-  (*j_out).n = count_ispeak;
+  (*j_out).n = count_peaks;
   (*j_out).m = 1;
-  (*i_out).n = count_ispeak;
+  (*i_out).n = count_peaks;
   (*i_out).m = 1;
-  (*x_out).n = count_ispeak;
+  (*x_out).n = count_peaks;
   (*x_out).m = 1;
-  return count_ispeak;
+  return count_peaks;
 }

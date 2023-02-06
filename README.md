@@ -1,5 +1,5 @@
 # Peak finder
-_**A command line tool to extract isolated peaks in digital elevation models**_
+_**A command-line tool to extract isolated peaks in digital elevation models**_
 ![Example of raster data peaks with radius of exclusion](test.png)
 
 For now, the script takes an ASCII Grid file as input and a radius of exclusion as parameter.

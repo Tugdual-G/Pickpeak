@@ -126,7 +126,7 @@ void transform_ortho(Grid grid, uint_array i_in, uint_array j_in,
   double *restrict y = (*y_t).val;
   unsigned int *restrict i_i = i_in.val;
   unsigned int *restrict j_i = j_in.val;
-  for (unsigned int i = 0; i < l; i++) {
+  for (unsigned int i = 0; i < l; ++i) {
     *(x + i) = (double)*(j_i + i) * M00 + M02;
     *(y + i) = -(double)*(i_i + i) * M00 + M12;
   }

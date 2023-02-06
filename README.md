@@ -47,17 +47,18 @@ test data by running the mainTEST.sh script in the unit_tests directory:
 This is the main speed bottleneck of the code.
 Speed is increased for **posix** compliants platforms by parsing the ASCII data as binary.
 This is done by using the *read\_ASCII\_data\_fast()* function in the asciiGridParse.c module. 
- **Performance:**on an old 3GHz intel i5 this takes approximately 2.7 seconds for 28 million points.
+
+**Performance:**on an old 3GHz intel i5 this takes approximately 2.7 seconds for 28 million points.
 
 In **non posix** compliants platforms, the data might have to be parsed as a text data.
 Thus, the *read\_ASCII\_data\_fast()* must be replaced by the *read\_ASCII\_data()*
 function in the pickPeak.c module. 
- **Performance:** approximately 4.5 seconds for 28 million points.
+**Performance:**approximately 4.5 seconds for 28 million points.
 
 ### Computation scheme 
 A reduction operation is performed on the gridded data.
 
-The whole grid is divided into subdomains of shape (h,h), with $h=\floor{R/\sqrt{2}}$.
+The whole grid is divided into subdomains of shape (h,h), with $h=\lfloor{R/\sqrt{2}}\rfloor$.
 A new grid is returned containing the maximum of each subdomain, along with the positions of the maxima in the previous grid.
 
 NOTE : If the domain shape is not made from multiples of h, 
@@ -65,7 +66,7 @@ the width or height of some subdomains will be smaller than h.
 
 Then the reduced grid is processed by comparison of each maximum and it's neighbors.
 
- **Performance:**the whole process takes approximately 0.037 seconds for 28 million points and an exclusion radius of 200 grid steps.
+**Performance:**the whole process takes approximately 0.037 seconds for 28 million points and an exclusion radius of 200 grid steps.
 
 
 

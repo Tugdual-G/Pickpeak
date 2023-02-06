@@ -5,7 +5,7 @@
 #ifndef PARSEARGS_H_
 #define PARSEARGS_H_
 
-#define LENFNAME 512
+#define MAXLENFNAME 512
 #define NFILES 50
 
 typedef struct Param Param;
@@ -19,7 +19,7 @@ struct Param {
   int margin;
   char *infile[NFILES];
   int nin;
-  char outfile[LENFNAME + 1];
+  char outfile[MAXLENFNAME + 1];
   double R;
 };
 #endif // PARSEARGS_H_

@@ -11,6 +11,9 @@
 #define STR1(x) #x
 #define STR(x) STR1(x)
 
+static void check_then_parse(char argv[], char argname[], char format[],
+                             void *param);
+
 static void print_help(char filename[]);
 
 void parse(int argc, char *argv[], struct Param *param) {
@@ -22,7 +25,7 @@ void parse(int argc, char *argv[], struct Param *param) {
     printf("\n Please provide enougth arguments \n\n");
     print_help("core/help.txt");
     exit(1);
-  } else if (argc > 6 + LENFNAME) {
+  } else if (argc > 6 + MAXLENFNAME) {
     printf(
         "\n ERROR Too many arguments. NOTE: max number of input files = " STR(
             NFILES) " \n");
@@ -33,7 +36,7 @@ void parse(int argc, char *argv[], struct Param *param) {
   (*param).nin = 0;
 
   /* hold the input file names and path before we can know their lengths*/
-  char temp_fname[LENFNAME + 1] = {'\0'};
+  char temp_fname[MAXLENFNAME + 1] = {'\0'};
 
   /* The actual length of the input file name */
   int len_fname;
@@ -46,67 +49,69 @@ void parse(int argc, char *argv[], struct Param *param) {
     if (!mar &&
         (strcoll(argv[i], "--margin") == 0 || strcoll(argv[i], "-m") == 0)) {
       ++i;
-      if (sscanf(argv[i], "%1d", &(*param).margin) == 1) {
-        ++i;
-      } else {
-        printf("\n ARGUMENR PARSING ERROR : margin \n");
-        exit(1);
-      }
-
-    } else if (!in && (strcoll(argv[i], "--infile") == 0 ||
-                       strcoll(argv[i], "-i") == 0)) {
+      check_then_parse(argv[i], "margin", "1d", &(*param).margin);
       ++i;
+      mar = 1;
+      continue;
+    }
+    if ((!in) &&
+        (strcoll(argv[i], "--infile") == 0 || strcoll(argv[i], "-i") == 0)) {
+      ++i;
+
+      /* Retriving all input files names */
       while ((!(*argv[i] == '-')) && (i < argc)) {
-        /* Retriving all input files names */
 
-        if (sscanf(argv[i], "%" STR(LENFNAME) "s", temp_fname) == 1) {
+        check_then_parse(argv[i], "input file", STR(MAXLENFNAME) "s",
+                         temp_fname);
 
-          len_fname = strnlen(temp_fname, LENFNAME);
-
-          (*param).infile[(*param).nin] = NULL;
-          (*param).infile[(*param).nin] =
-              (char *)malloc(sizeof(char) * (len_fname + 1));
-          if ((*param).infile[(*param).nin] == NULL) {
-            printf("\n allocation ERROR \n");
-            exit(1);
-          }
-          strncpy((*param).infile[(*param).nin], temp_fname, len_fname + 1);
-          (*param).infile[(*param).nin][len_fname] = '\0';
-          in = 1;
-          ++i;
-          ++(*param).nin;
-        } else {
-          printf("\n ARGUMENR PARSING ERROR : infile \n");
+        len_fname = strlen(temp_fname);
+        if (len_fname > MAXLENFNAME) {
+          printf("\n ERROR: the input file name is too long.\n"
+                 "maximum lenght = %u \n",
+                 MAXLENFNAME);
           exit(1);
         }
-      }
 
-    } else if (!out && (strcoll(argv[i], "--outfile") == 0 ||
-                        strcoll(argv[i], "-o") == 0)) {
-      ++i;
-      if (sscanf(argv[i], "%" STR(LENFNAME) "s", (*param).outfile) == 1) {
-        out = 1;
+        (*param).infile[(*param).nin] = NULL;
+        (*param).infile[(*param).nin] =
+            (char *)malloc(sizeof(char) * (len_fname + 1));
+
+        if ((*param).infile[(*param).nin] == NULL) {
+          printf("\n allocation ERROR \n");
+          exit(1);
+        }
+        strncpy((*param).infile[(*param).nin], temp_fname, len_fname + 1);
+        (*param).infile[(*param).nin][len_fname] = '\0';
+        in = 1;
         ++i;
-      } else {
-        printf("\n ARGUMENR PARSING ERROR : outfile \n");
-        exit(1);
+        ++(*param).nin;
       }
-    } else if (!rad && (strcoll(argv[i], "--radius") == 0 ||
-                        strcoll(argv[i], "-R") == 0)) {
+      continue;
+    }
+    if (!out &&
+        (strcoll(argv[i], "--outfile") == 0 || strcoll(argv[i], "-o") == 0)) {
       ++i;
-      if (sscanf(argv[i], "%lf", &(*param).R) == 1) {
-        rad = 1;
-        ++i;
-      } else {
-        printf("\n ARGUMENR PARSING ERROR : radius \n");
-        exit(1);
-      }
-    } else if (strcoll(argv[i], "--help") == 0) {
+      check_then_parse(argv[i], "output file", STR(MAXLENFNAME) "s",
+                       &(*param).outfile);
+      out = 1;
+      ++i;
+      continue;
+    }
+    if (!rad &&
+        (strcoll(argv[i], "--radius") == 0 || strcoll(argv[i], "-R") == 0)) {
+      ++i;
+      check_then_parse(argv[i], "radius", "lf", &(*param).R);
+      rad = 1;
+      ++i;
+      continue;
+    }
+
+    if (strcoll(argv[i], "--help") == 0) {
       print_help("core/help.txt");
       exit(1);
-    } else {
-      ++i;
     }
+
+    ++i;
   }
   if (!(out && in && rad)) {
     printf("\n  ARGUMENR PARSING ERROR  help : --help \n");
@@ -118,10 +123,10 @@ static void check_then_parse(char argv[], char argname[], char format[],
                              void *param) {
 
   char format_str[20] = {'\0'};
-  snprintf(format_str, 19, "%%" STR(LENFNAME) "%s", format);
+  snprintf(format_str, 19, "%%%s", format);
   if (sscanf(argv, format_str, param) == 1) {
   } else {
-    printf("\n ARGUMENR PARSING ERROR : outfile \n");
+    printf("\n ARGUMENR PARSING ERROR : %s \n", argname);
     exit(1);
   }
 }

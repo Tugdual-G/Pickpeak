@@ -1,5 +1,5 @@
 # Peak finder
-_**A command-line tool to extract isolated peaks in digital elevation models**_
+**A command-line tool to extract isolated peaks from digital elevation models**
 ![Example of raster data peaks with radius of exclusion](test.png)
 
 For now, the script takes an ASCII Grid file as input and a radius of exclusion as parameter.
@@ -38,7 +38,7 @@ Compile by running make in the root directory:
 The only nonstandard library needed for compilation is the json-c library,
 you may have to adjust the Makefile, depending on your installation. 
 
-**Note**
+**_Note_**
 It is possible to check is the script working correctly using the basic 
 test data by running the mainTEST.sh script in the unit_tests directory:
 

@@ -6,7 +6,7 @@ For now, the script takes an ASCII Grid file as input and a radius of exclusion 
 The output is a GEOjson file containing the isolated peaks coordinates and elevation.
 A peak is chosen when there is no taller peak in its surrounding area, defined by the radius R.
 
-NODATA values are ignored, if specified in the ASCIIgrid header.
+NODATA values are ignored, if provided in the ASCIIgrid header.
 
 You will also find a simpler implementation of the project in python, but it's a draft.
 This is a work in progress.

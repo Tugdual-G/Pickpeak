@@ -74,7 +74,7 @@ Then the reduced grid is processed by comparison of each maximum and it's neighb
 the whole process takes approximately 0.037 seconds for 28 million points and an exclusion radius of 200 grid steps.
 
 
-**_NOTE_** : If the domain shape is not made from multiples of h, 
+**_NOTE_** : If the domain shape is not made of multiples of h, 
 the width or height of some subdomains will be smaller than h, which has no incidence on the computation. 
 
 

@@ -62,17 +62,18 @@ approximately 4.5 seconds for 28 million points.
 ### Computation scheme 
 A reduction operation is performed on the gridded data.
 
-The whole grid is divided into subdomains of shape (h,h), with $h=\lfloor{R/\sqrt{2}}\rfloor$.
+The whole grid is divided into subdomains of shape (h,h) , with $h=\lfloor{R/\sqrt{2}}\rfloor$.
 A new grid is returned containing the maximum of each subdomain, along with the positions of the maxima in the previous grid.
+The reduction is performed on one axis at time to increase efficiency, by respecting the data continuity.
 
-NOTE : If the domain shape is not made from multiples of h, 
-the width or height of some subdomains will be smaller than h. 
-
-Then the reduced grid is processed by comparison of each maximum and it's neighbors.
+Then the reduced grid is processed by comparison of each maximum and it's neighbors height and by checking the isolation radius. 
 
 **Performance:**
 the whole process takes approximately 0.037 seconds for 28 million points and an exclusion radius of 200 grid steps.
 
+
+**_NOTE_** : If the domain shape is not made from multiples of h, 
+the width or height of some subdomains will be smaller than h, which has no incidence on the computation. 
 
 
     

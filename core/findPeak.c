@@ -105,7 +105,7 @@ static int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
   unsigned int n = x_in.n;
   unsigned int l = m * n;
 
-  /* list of the maxima wich are potential isolated summits */
+  /* list of the maxima which are potential isolated summits */
   unsigned int idx[l + 1]; /* NOTE warning variable Length array */
   for (unsigned int i = 0; i < l + 1; ++i) {
     idx[i] = i;

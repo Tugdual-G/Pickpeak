@@ -24,9 +24,9 @@ int main(int argc, char *argv[]) {
    * The command line parameters are:
    *
    * -R for the radius of exclusion,
-   * -i or --infile to wich is given the input file name,
-   * -o or --outfile to wich is given the name of the output file
-   * -m or --margin wich limit the spacial extent of the returned values
+   * -i or --infile to which is given the input file name,
+   * -o or --outfile to which is given the name of the output file
+   * -m or --margin which limit the spacial extent of the returned values
    */
 
   /* Parsing the command-line parameters */

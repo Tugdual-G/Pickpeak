@@ -7,7 +7,7 @@
 **
 ** The parsing of the data can be done by directly
 ** loading all the data in the RAM, or by the use of
-** a slower method but preserving RAM, wich can be
+** a slower method but preserving RAM, which can be
 ** usefull, e.g. if the computation is run
 ** in parallel.
 ** NOTE fread is mean to be buffered,

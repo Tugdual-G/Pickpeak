@@ -107,7 +107,7 @@ static int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
 
   /* list of the maxima wich are potential isolated summits */
   unsigned int idx[l + 1]; /* NOTE warning variable Length array */
-  for (unsigned int i = 0; i < l + 1; i++) {
+  for (unsigned int i = 0; i < l + 1; ++i) {
     idx[i] = i;
   }
 
@@ -125,7 +125,7 @@ static int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
 
   /* discard the eventual nodata values */
   while (*(x + k) == nodata) {
-    k++;
+    ++k;
   }
 
   /* Start iterating over the maxima */
@@ -141,11 +141,11 @@ static int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
       *(i_o + count_peaks) = *(i_i + k);
       *(j_o + count_peaks) = *(j_i + k);
       *((*x_out).val + count_peaks) = *(x + k);
-      count_peaks++;
+      ++count_peaks;
     }
 
     /* finding the next potentialy isolated peak */
-    k++;
+    ++k;
     trigg = 1;
     while (trigg) {
       while ((k != *(idx + k))) {
@@ -153,7 +153,7 @@ static int find_isolated(double_array x_in, uint_array i_in, uint_array j_in,
       }
       trigg = 0;
       while ((*(x + k) == nodata) && (k < l)) {
-        k++;
+        ++k;
         trigg = 1;
       }
     }
@@ -195,8 +195,8 @@ inline static char check_neighbours(unsigned int *i_i, unsigned int *j_i,
   /* Distance between the peaks */
   double d;
 
-  for (unsigned int i1 = lim_inf_i; i1 < lim_sup_i; i1++) {
-    for (unsigned int j1 = lim_inf_j; j1 < lim_sup_j; j1++) {
+  for (unsigned int i1 = lim_inf_i; i1 < lim_sup_i; ++i1) {
+    for (unsigned int j1 = lim_inf_j; j1 < lim_sup_j; ++j1) {
 
       /* Distance between the summit and the neighbour */
       d = (*(i_i + k) - *(i_i + i1 * n + j1)) *

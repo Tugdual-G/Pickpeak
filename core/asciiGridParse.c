@@ -2,7 +2,7 @@
 ** This module take care of text data input comforming to
 ** the AAIGrid – Arc/Info ASCII Grid format.
 **
-** The module read the header information and the data
+** The module reads the header information and the data
 ** in separates functions.
 **
 ** The parsing of the data can be done by directly
@@ -62,7 +62,7 @@ Grid read_ASCII_header(char *filename) {
     exit(1);
   }
   /* Checking for every possible header information */
-  for (unsigned int i = 0; i < MAX_META; i++) {
+  for (unsigned int i = 0; i < MAX_META; ++i) {
     if (fscanf(fp, "%24[a-zA-Z_] %lf ", temp_header_row.name,
                &temp_header_row.val) == 2) {
       if (strcoll(temp_header_row.name, "ncols") == 0) {
@@ -220,8 +220,8 @@ void read_ASCII_data_fast(Grid *grid, char fname[]) {
     while ((data[k] != '\n') && (data[k] != ' ') &&
            (j < MAX_SIGNIFICANT_DIGITS) && (k < data_size)) {
       temp_str[j] = data[k];
-      j++;
-      k++;
+      ++j;
+      ++k;
     }
 
     temp_str[j] = '\0';
@@ -229,14 +229,14 @@ void read_ASCII_data_fast(Grid *grid, char fname[]) {
 
     /* going through the eventual remainings figures */
     while ((data[k] != '\n') && (data[k] != ' ') && (k < data_size)) {
-      k++;
+      ++k;
     }
 
     /* Going through the space or newline caracters separing the data values */
     while (((data[k] == '\n') || (data[k] == ' ')) && (k < data_size)) {
-      k++;
+      ++k;
     }
-    i++;
+    ++i;
   }
 
   if (i != m * n) {
@@ -283,11 +283,11 @@ void maxv(Grid *grid) {
    */
   unsigned int i = 0;
   while ((*(x + i) == (*grid).NODATA_value) && (i < (l - 1))) {
-    i++;
+    ++i;
   }
   max = *(x + i);
   min = *(x + i);
-  for (i = i; i < l; i++) {
+  for (i = i; i < l; ++i) {
     if (*(x + i) > max && (*(x + i) != (*grid).NODATA_value)) {
       max = *(x + i);
     } else if (*(x + i) < min && (*(x + i) != (*grid).NODATA_value)) {

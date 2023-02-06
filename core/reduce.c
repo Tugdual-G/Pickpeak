@@ -8,8 +8,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static inline void maxnan(double *x, unsigned int lenx, double nodata,
+                          unsigned int *imax, double *vmax);
+
+static void reduce_along_j0(double_array x_in, unsigned int h, double nodata,
+                            double_array xr_out, uint_array j_max_out);
+
+static void reduce_along_j1(double_array x_in, unsigned int h,
+                            uint_array i_original, double nodata,
+                            double_array xr_out, uint_array j_max_out,
+                            uint_array i_max_out);
+
 void max_reduce(double_array x_in, unsigned int h, double nodata,
                 double_array xr_out, uint_array i_out, uint_array j_out) {
+  /*
+  ** This function apply a reduction, by dividing the input data into
+  ** group of cells of shape (h, h).
+  ** The reduction return the max value of each h*h group of cells.
+  **
+  ** when the input size is no a multiple of h, the remaining cells
+  ** are grouped in the shape (h, n%h), (m%h,h) or (m%h, n%h)
+  **
+  ** The reduction takes place in two times.
+  ** One reduction is computed two times, one for each axis
+  ** in order to increase speed.
+  **
+  ** For speed the result of the reduction operation is written to
+  ** a transposed array at each reductions pass, i.e two times.
+  ** Thus the reduced data is no more transposed at the output.
+  */
 
   unsigned int m = x_in.m, n = x_in.n;
 
@@ -34,8 +61,8 @@ void max_reduce(double_array x_in, unsigned int h, double nodata,
   freearray(j_out0);
 }
 
-void reduce_along_j0(double_array x_in, unsigned int h, double nodata,
-                     double_array xr_out, uint_array j_max_out) {
+static void reduce_along_j0(double_array x_in, unsigned int h, double nodata,
+                            double_array xr_out, uint_array j_max_out) {
 
   /*
   This is a reduction fonction,
@@ -79,8 +106,8 @@ void reduce_along_j0(double_array x_in, unsigned int h, double nodata,
   unsigned int imax;
 
   unsigned int i, j;
-  for (i = 0; i < m; i++) {
-    for (j = 0; j < n / h; j++) {
+  for (i = 0; i < m; ++i) {
+    for (j = 0; j < n / h; ++j) {
       maxnan((x + i * n + j * h), h, nodata, &imax, &vmax);
       *(xr + j * m + i) = vmax;
       *(j_out + j * m + i) = imax + j * h;
@@ -93,9 +120,10 @@ void reduce_along_j0(double_array x_in, unsigned int h, double nodata,
   }
 }
 
-void reduce_along_j1(double_array x_in, unsigned int h, uint_array i_original,
-                     double nodata, double_array xr_out, uint_array i_max_out,
-                     uint_array j_max_out) {
+static void reduce_along_j1(double_array x_in, unsigned int h,
+                            uint_array i_original, double nodata,
+                            double_array xr_out, uint_array i_max_out,
+                            uint_array j_max_out) {
 
   /*
   This is a reduction fonction,
@@ -141,8 +169,8 @@ void reduce_along_j1(double_array x_in, unsigned int h, uint_array i_original,
   /* Shape xr (,) : x.m, x.n/h +(x.n%h)/(x.n%h) */
 
   unsigned int i, j;
-  for (i = 0; i < m; i++) {
-    for (j = 0; j < n / h; j++) {
+  for (i = 0; i < m; ++i) {
+    for (j = 0; j < n / h; ++j) {
       maxnan((x + i * n + j * h), h, nodata, &imax, &vmax);
       *(xr + j * m + i) = vmax;
       *(j_out + j * m + i) = imax + j * h;
@@ -157,16 +185,16 @@ void reduce_along_j1(double_array x_in, unsigned int h, uint_array i_original,
   }
 }
 
-inline void maxnan(double *x, unsigned int lenx, double nodata,
-                   unsigned int *imax, double *vmax) {
+static inline void maxnan(double *x, unsigned int lenx, double nodata,
+                          unsigned int *imax, double *vmax) {
   /* Finds the max value in (x) (x+lenx) */
   unsigned int i = 0;
   while (*(x + i) == nodata && i < lenx) {
-    i++;
+    ++i;
   }
   *vmax = *(x + i);
   *imax = i;
-  for (i = i; i < lenx; i++) {
+  for (i = i; i < lenx; ++i) {
     if (*vmax < *(x + i) && *(x + i) != nodata) {
       *vmax = *(x + i);
       *imax = i;

@@ -1,3 +1,20 @@
+/*
+** This module take care of text data input comforming to
+** the AAIGrid – Arc/Info ASCII Grid format.
+**
+** The module reads the header information and the data
+** in separates functions.
+**
+** The parsing of the data can be done by directly
+** loading all the data in the RAM, or by the use of
+** a slower method but preserving RAM, wich can be
+** usefull, e.g. if the computation is run
+** in parallel.
+** NOTE fread is mean to be buffered,
+** so i am not sure that it is the main cause of
+** the performance change.
+**
+*/
 #ifndef ASCIIGRIDPARSE_H_
 #define ASCIIGRIDPARSE_H_
 #include "array.h"

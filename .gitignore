@@ -16,4 +16,5 @@ pickpeak
 *.prj
 *.shp
 *.shx
+merge
 !griddata.asc

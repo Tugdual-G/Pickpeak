@@ -5,12 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void get_extent(Grid **gridlist, unsigned char ngrids, double *x_ll,
+void get_extent(LinkedGrid **gridlist, unsigned char ngrids, double *x_ll,
                 double *y_ll, double *x_ur, double *y_ur) {
 
   /* Get the total spacial extent of a list of Grids */
 
-  Grid grid = *gridlist[0];
+  LinkedGrid grid = *gridlist[0];
   *x_ll = grid.xllcenter;
   *y_ll = grid.yllcenter;
   *x_ur = grid.xllcenter;
@@ -71,10 +71,58 @@ void insert_array(double_array *patch, int i_ll, int j_ll,
   }
 }
 
-double_array merge(Grid **gridlist, unsigned char ngrids, double nodata) {
+double_array merge_window(LinkedGrid **grid_disposition, unsigned char ngrids,
+                          unsigned int bbox[]) {
+
+  /* bbox : bounding box with bounds included in the windows*/
+
+  LinkedGrid *grid = NULL;
+  unsigned int k;
+  while ((grid == NULL) && (k < ngrids * ngrids)) {
+    grid = grid_disposition[k];
+    ++k;
+  }
+  if (k == ngrids * ngrids) {
+    printf("\n ERROR: the subdomain disposition grid is empty \n");
+    exit(1);
+  }
+  double nodata = (*grid).NODATA_value;
+  unsigned int ncols = (*grid).ncols;
+  unsigned int nrows = (*grid).nrows;
+
+  unsigned int m_w = bbox[3] - bbox[2];
+  unsigned int n_w = bbox[1] - bbox[0];
+  double_array merged = createdoublearray(m_w, n_w);
+  fill_double_array(&merged, nodata);
+
+  /* finding wich datasets are inside the window */
+  unsigned char pos_imin, pos_imax;
+  unsigned char pos_jmin, pos_jmax;
+  pos_imin = bbox[2] / nrows;
+  pos_imax = bbox[3] / nrows;
+
+  pos_jmin = bbox[0] / ncols;
+  pos_jmax = bbox[1] / ncols;
+
+  unsigned int i_ll, j_ll;
+  for (unsigned char i = pos_imin; i < pos_imax + 1; ++i) {
+    for (unsigned char j = pos_jmin; j < pos_jmax + 1; ++j) {
+      grid = grid_disposition[i * ngrids + j];
+      if (grid == NULL) {
+        continue;
+      }
+      i_ll = i * nrows - bbox[2];
+      j_ll = j * ncols - bbox[0];
+      insert_array(&(*grid).data, i_ll, j_ll, &merged);
+    }
+  }
+  return merged;
+}
+
+double_array merge(LinkedGrid **gridlist, unsigned char ngrids, double nodata) {
   /* gridlist : grids to be merged */
 
-  Grid grid = *gridlist[0];
+  LinkedGrid grid = *gridlist[0];
   double x_ll, y_ll;
   double x_ur, y_ur;
   double dx = grid.cellsize;
@@ -98,15 +146,18 @@ double_array merge(Grid **gridlist, unsigned char ngrids, double nodata) {
   return totaldomain;
 }
 
-void get_position(Grid subdomain, double xylowleftcorner[],
+void get_position(LinkedGrid *subdomain, double xylowleftcorner[],
                   unsigned char *pos_i, unsigned char *pos_j) {
   /* Finds the position of a subdomain in the whole domain */
+  /* The shape of the differents input datasets is suposed to be identical */
+  /* x_ll and y_ll describe the position of the low left corner of the whole
+   * domain*/
   double x_ll = xylowleftcorner[0], y_ll = xylowleftcorner[1];
-  unsigned int nrows = subdomain.nrows;
-  unsigned int ncols = subdomain.ncols;
-  double dx = subdomain.cellsize;
+  unsigned int nrows = (*subdomain).nrows;
+  unsigned int ncols = (*subdomain).ncols;
+  double dx = (*subdomain).cellsize;
 
   /* add + dx to avoid rounding (floring) error */
-  *pos_i = (unsigned char)(subdomain.yllcenter - y_ll + dx) / (nrows * dx);
-  *pos_j = (unsigned char)(subdomain.xllcenter - x_ll + dx) / (ncols * dx);
+  *pos_i = (unsigned char)(((*subdomain).yllcenter - y_ll + dx) / (nrows * dx));
+  *pos_j = (unsigned char)(((*subdomain).xllcenter - x_ll + dx) / (ncols * dx));
 };

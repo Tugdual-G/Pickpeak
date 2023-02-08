@@ -59,6 +59,17 @@ void freearrayInt(uint_array array) {
   freecount++;
 }
 
+void fill_uint_array(uint_array *array, unsigned int val) {
+  for (unsigned int i = 0; i < (*array).m * (*array).n; ++i) {
+    (*array).val[i] = val;
+  }
+}
+void fill_double_array(double_array *array, double val) {
+  for (unsigned int i = 0; i < (*array).m * (*array).n; ++i) {
+    (*array).val[i] = val;
+  }
+}
+
 void checkmem(void) {
   // a bit useless
   if (createcount - freecount != 0) {

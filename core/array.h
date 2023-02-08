@@ -4,18 +4,20 @@
 typedef struct double_array double_array;
 typedef struct uint_array uint_array;
 
+double_array createdoublearray(unsigned int m, unsigned int n);
+
+uint_array create_uintarray(unsigned int m, unsigned int n);
+
 #define freearray(x)                                                           \
   _Generic((x), double_array                                                   \
            : freearrayDouble, uint_array                                       \
            : freearrayInt, default                                             \
            : freearrayDouble)(x)
-
-double_array createdoublearray(unsigned int m, unsigned int n);
-
-uint_array create_uintarray(unsigned int m, unsigned int n);
-
 void freearrayDouble(double_array array);
 void freearrayInt(uint_array array);
+
+void fill_double_array(double_array *array, double val);
+void fill_uint_array(uint_array *array, unsigned int val);
 
 void checkmem(void);
 

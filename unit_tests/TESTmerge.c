@@ -1,120 +1,101 @@
 #include "../core/array.h"
+#include "../core/mergeData.h"
 #include <math.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#define BG "\x1b[48;2;"
+#define RST "\x1b[0m"
 
-typedef struct Grid {
-  double_array data;
-  double xllcenter;
-  double yllcenter;
-  double cellsize;
-} Grid;
-
-typedef struct Gridlinklist {
-  Grid *grid;
-  struct Gridlinklist *next;
-} Gridlinklist;
-
-void init_array(double_array *array, double val) {
+void ascent_array(double_array *array, double val) {
   for (unsigned int i = 0; i < (*array).m * (*array).n; ++i) {
-    (*array).val[i] = val;
+    (*array).val[i] = i + val;
   }
 }
 
-void get_extent(Gridlinklist grid, double *x_ll, double *y_ll, double *x_ur,
-                double *y_ur) {
-
-  *x_ll = (*grid.grid).xllcenter;
-  *y_ll = (*grid.grid).yllcenter;
-  *x_ur = (*grid.grid).xllcenter;
-  *y_ur = (*grid.grid).yllcenter;
-  double temp_xur;
-  double temp_yur;
-  double dx = ((*grid.grid).cellsize);
-
-  temp_xur = (*grid.grid).xllcenter + dx * ((*grid.grid).data.n - 1);
-  temp_yur = (*grid.grid).yllcenter + dx * ((*grid.grid).data.m - 1);
-
-  while (grid.next != NULL) {
-    grid = *grid.next;
-    if (*x_ll > (*grid.grid).xllcenter) {
-      *x_ll = (*grid.grid).xllcenter;
-    }
-    if (*y_ll > (*grid.grid).yllcenter) {
-      *y_ll = (*grid.grid).yllcenter;
-    }
-
-    temp_xur = (*grid.grid).xllcenter + dx * ((*grid.grid).data.n - 1);
-    if (*x_ur < temp_xur) {
-      *x_ur = temp_xur;
-    }
-
-    temp_yur = (*grid.grid).yllcenter + dx * ((*grid.grid).data.m - 1);
-    if (*y_ur < temp_yur) {
-      *y_ur = temp_yur;
+double max_array(double_array array) {
+  unsigned int m = array.m, n = array.n;
+  double max = *array.val;
+  for (unsigned int i = 0; i < m * n; ++i) {
+    if (*(array.val + i) > max) {
+      max = *(array.val + i);
     }
   }
+  return max;
 }
 
-Gridlinklist *add_elem(Gridlinklist *head, Grid *nextgrid) {
-  Gridlinklist *newhead;
-  newhead = (Gridlinklist *)malloc(sizeof(Gridlinklist));
-  (*newhead).grid = nextgrid;
-  (*newhead).next = NULL;
-  (*head).next = newhead;
-  return newhead;
-}
-
-void freeGridlinklist(Gridlinklist *start) {
-  Gridlinklist *prev;
-  Gridlinklist *current = start;
-  while ((*current).next != NULL) {
-    prev = current;
-    current = (*current).next;
-    if ((*(*prev).grid).data.val != NULL) {
-      free((*(*prev).grid).data.val);
-    }
-    if (prev != NULL) {
-      free(prev);
+double min_array(double_array array) {
+  unsigned int m = array.m, n = array.n;
+  double min = *array.val;
+  for (unsigned int i = 0; i < m * n; ++i) {
+    if (*(array.val + i) < min) {
+      min = *(array.val + i);
     }
   }
+  return min;
 }
 
-void paint_array(double_array *patch, unsigned int i0, unsigned int j0,
-                 double_array *canva) {
-  unsigned int mp = (*patch).m, np = (*patch).n;
-  unsigned int nc = (*canva).n;
+void array_to_colors(double_array *array, unsigned char scale,
+                     unsigned char step) {
 
-  for (unsigned int i = 0; i < mp; ++i) {
-    for (unsigned int j = 0; j < np; ++j) {
-      (*canva).val[(i0 + i) * nc + (j0 + j)] = (*patch).val[i * np + j];
+  FILE *fp = NULL;
+  fp = fopen("rgbcmap.asc", "r");
+  if (fp == NULL) {
+    exit(1);
+  }
+
+  char c;
+  unsigned int cmaplength = 0;
+  while ((c = getc(fp)) != EOF) {
+    if (c == '\n') {
+      ++cmaplength;
     }
   }
-}
 
-double_array merge(Gridlinklist *root, double nodata) {
-  double x_ll, y_ll;
-  double x_ur, y_ur;
-  double dx = (*(*root).grid).cellsize;
+  unsigned char cmap[(1 + cmaplength) * 3];
+  unsigned int colorintensity;
+  fseek(fp, 0, SEEK_SET);
 
-  get_extent(*root, &x_ll, &y_ll, &x_ur, &y_ur);
-
-  unsigned int m_t, n_t;
-  m_t = (y_ur - y_ll) / dx + 1;
-  n_t = (x_ur - x_ll) / dx + 1;
-
-  double_array totaldomain = createdoublearray(m_t, n_t);
-  init_array(&totaldomain, nodata);
-
-  unsigned int i0, j0;
-  Gridlinklist *grid = root;
-  while (grid != NULL) {
-    i0 = ((*(*grid).grid).yllcenter - y_ll) / dx; // TODO might fail
-    j0 = ((*(*grid).grid).xllcenter - x_ll) / dx; // TODO might fail
-    paint_array(&(*(*grid).grid).data, i0, j0, &totaldomain);
-    grid = (*grid).next;
+  /* scanning the colormap rgb values */
+  unsigned int i = 0;
+  while (fscanf(fp, "%d ", &colorintensity) != EOF) {
+    cmap[i] = (unsigned char)colorintensity;
+    ++i;
   }
-  return totaldomain;
+  fclose(fp);
+
+  unsigned int m = (*array).m, n = (*array).n;
+  double max = max_array(*array);
+  double min = min_array(*array);
+  double array_range = (max - min);
+
+  /* Value used to normalize the data */
+  unsigned char maxc = cmaplength - 1;
+
+  char spaces[scale * 2 + 1];
+  for (unsigned char i = 0; i < scale * 2; ++i) {
+    spaces[i] = ' ';
+  }
+  spaces[scale * 2] = '\0';
+
+  unsigned int cmapidx;
+  unsigned char R, G, B;
+  printf("\n");
+  for (unsigned int i = 0; i < m; ++i) {
+    for (unsigned char k = 0; k < scale; ++k) {
+      printf("\t");
+      for (unsigned int j = 0; j < n; ++j) {
+        cmapidx = (unsigned int)(((*array).val[i * n + j] - min) * maxc /
+                                 array_range);
+        R = cmap[cmapidx * 3];
+        G = cmap[cmapidx * 3 + 1];
+        B = cmap[cmapidx * 3 + 2];
+        printf(BG "%u;%u;%um%s" RST, R, G, B, spaces);
+      }
+      printf("\n");
+    }
+  }
+  printf("\n");
 }
 
 void printarray(double_array array) {
@@ -131,41 +112,37 @@ void printarray(double_array array) {
 int main(void) {
   unsigned int m = 5, n = 5;
   double cellsize = 1;
-  Grid grid0 = {.xllcenter = -1,
+  unsigned char ngrids = 3;
+  Grid *gridlist[ngrids];
+  Grid grid0 = {.xllcenter = 1,
                 .yllcenter = -1,
                 .cellsize = 1,
                 .data = createdoublearray(m, n)};
-  init_array(&grid0.data, 1);
-
-  Gridlinklist root = {.grid = &grid0, .next = NULL};
-  Gridlinklist *head;
+  ascent_array(&grid0.data, 5);
+  gridlist[0] = &grid0;
 
   Grid grid1 = {.xllcenter = n * cellsize,
                 .yllcenter = 0,
                 .cellsize = 1,
                 .data = createdoublearray(m, n)};
-  init_array(&grid1.data, 2);
-  head = add_elem(&root, &grid1);
+  ascent_array(&grid1.data, 50);
+  gridlist[1] = &grid1;
 
   Grid grid2 = {.xllcenter = n * cellsize,
                 .yllcenter = m * cellsize,
                 .cellsize = 1,
                 .data = createdoublearray(m + 1, n + 3)};
-  init_array(&grid2.data, 3);
-  head = add_elem(head, &grid2);
+  ascent_array(&grid2.data, 100);
+  gridlist[2] = &grid2;
 
   double x_ll, y_ll;
   double x_ur, y_ur;
 
-  get_extent(root, &x_ll, &y_ll, &x_ur, &y_ur);
-
-  printf("\n x_ll:%lf, y_ll:%lf, x_ur:%lf, y_ur:%lf \n", x_ll, y_ll, x_ur,
-         y_ur);
-
   double_array totaldomain;
-  totaldomain = merge(&root, 0);
-  printarray(totaldomain);
+  totaldomain = merge(gridlist, ngrids, 0);
+  array_to_colors(&totaldomain, 2, 1);
+  insert_array(&grid1.data, 1, -2, &grid0.data);
+  array_to_colors(&grid0.data, 2, 1);
 
-  freeGridlinklist(root.next);
   return 0;
 }

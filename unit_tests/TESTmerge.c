@@ -109,48 +109,15 @@ void printarray(double_array array) {
   }
 }
 
-LinkedGrid **link_grids(LinkedGrid **gridlists, unsigned char ngrids) {
-  /* find the neighbours of each subdomains: west east south north */
-  double x_ll, y_ll, x_ur, y_ur;
-  get_extent(gridlists, ngrids, &x_ll, &y_ll, &x_ur, &y_ur);
-  double xy_ll[] = {x_ll, y_ll};
-  unsigned char xpos;
-  unsigned char ypos;
+void divide_domain(LinkedGrid **grid_disposition, unsigned char ngrids,
+                   unsigned int bbox[]) {
 
-  LinkedGrid **grids_disposition;
-  grids_disposition =
-      (LinkedGrid **)malloc(sizeof(LinkedGrid *) * ngrids * ngrids);
-
-  for (unsigned int i = 0; i < ngrids * ngrids; ++i) {
-    grids_disposition[i] = NULL;
+  LinkedGrid *grid = NULL;
+  unsigned int k;
+  while ((grid == NULL) && (k < ngrids * ngrids)) {
+    grid = grid_disposition[k];
+    ++k;
   }
-
-  LinkedGrid *grid_ptr;
-  for (unsigned char i = 0; i < ngrids; ++i) {
-    grid_ptr = gridlists[i];
-    get_position(grid_ptr, xy_ll, &ypos, &xpos);
-    grids_disposition[ypos * ngrids + xpos] = grid_ptr;
-  }
-
-  for (unsigned char i = 0; i < ngrids; ++i) {
-    for (unsigned char j = 0; j < ngrids; ++j) {
-      grid_ptr = grids_disposition[i * ngrids + j];
-      if (grid_ptr == NULL) {
-        continue;
-      }
-      (*grid_ptr).west = (j > 0) ? grids_disposition[i * ngrids + j - 1] : NULL;
-
-      (*grid_ptr).east =
-          (j < ngrids - 1) ? grids_disposition[i * ngrids + j + 1] : NULL;
-
-      (*grid_ptr).south =
-          (i > 0) ? grids_disposition[(i - 1) * ngrids + j] : NULL;
-
-      (*grid_ptr).north =
-          (i < ngrids - 1) ? grids_disposition[(i + 1) * ngrids + j] : NULL;
-    }
-  }
-  return grids_disposition;
 }
 
 int main(void) {
@@ -196,14 +163,15 @@ int main(void) {
   totaldomain = merge(gridlist, ngrids, 0);
   array_to_colors(&totaldomain, 2, 1);
 
-  LinkedGrid **griddisposition;
-  griddisposition = link_grids(gridlist, ngrids);
+  AllGrids allgrids;
+  allgrids = link_grids(gridlist, ngrids);
 
   double_array window;
-  unsigned int bbox[] = {3, 11, 4, 7};
-  window = merge_window(griddisposition, ngrids, bbox);
+  unsigned int bbox[] = {0, 7, 1, 8};
+  window = merge_window(allgrids, bbox);
   array_to_colors(&window, 2, 1);
 
+  freearray(window);
   freearray(totaldomain);
   freearray(grid0.data);
   freearray(grid1.data);

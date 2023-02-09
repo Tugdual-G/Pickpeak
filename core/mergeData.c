@@ -71,21 +71,23 @@ void insert_array(double_array *patch, int i_ll, int j_ll,
   }
 }
 
-double_array merge_window(LinkedGrid **grid_disposition, unsigned char ngrids,
-                          unsigned int bbox[]) {
+double_array merge_window(AllGrids allgrids, unsigned int bbox[]) {
 
-  /* bbox : bounding box with bounds included in the windows*/
+  /*
+   * grid_disposition contain the spacial agencement of the subdomains.
+   *  it is of shape (ngrids,ngrids), each cell contains NULL or a pointer to
+   *  the coresponding grid.
+   * bbox : bounding box with bounds included in the windows*/
 
   LinkedGrid *grid = NULL;
   unsigned int k;
-  while ((grid == NULL) && (k < ngrids * ngrids)) {
-    grid = grid_disposition[k];
+  unsigned char ngridj = allgrids.ngrids_j, ngridi = allgrids.ngrids_i;
+
+  while ((grid == NULL) && (k < ngridj * ngridi)) {
+    grid = allgrids.grids_disposition[k];
     ++k;
   }
-  if (k == ngrids * ngrids) {
-    printf("\n ERROR: the subdomain disposition grid is empty \n");
-    exit(1);
-  }
+
   double nodata = (*grid).NODATA_value;
   unsigned int ncols = (*grid).ncols;
   unsigned int nrows = (*grid).nrows;
@@ -100,14 +102,18 @@ double_array merge_window(LinkedGrid **grid_disposition, unsigned char ngrids,
   unsigned char pos_jmin, pos_jmax;
   pos_imin = bbox[2] / nrows;
   pos_imax = bbox[3] / nrows;
+  pos_imin = (pos_imin >= ngridi) ? pos_imin : 0;
+  pos_imax = (pos_imax <= ngridi) ? pos_imax : ngridi;
 
   pos_jmin = bbox[0] / ncols;
   pos_jmax = bbox[1] / ncols;
+  pos_jmin = (pos_jmin >= ngridj) ? pos_jmin : 0;
+  pos_jmax = (pos_jmax <= ngridj) ? pos_jmax : ngridj;
 
   unsigned int i_ll, j_ll;
   for (unsigned char i = pos_imin; i < pos_imax + 1; ++i) {
     for (unsigned char j = pos_jmin; j < pos_jmax + 1; ++j) {
-      grid = grid_disposition[i * ngrids + j];
+      grid = allgrids.grids_disposition[i * ngridj + j];
       if (grid == NULL) {
         continue;
       }
@@ -161,3 +167,68 @@ void get_position(LinkedGrid *subdomain, double xylowleftcorner[],
   *pos_i = (unsigned char)(((*subdomain).yllcenter - y_ll + dx) / (nrows * dx));
   *pos_j = (unsigned char)(((*subdomain).xllcenter - x_ll + dx) / (ncols * dx));
 };
+
+AllGrids link_grids(LinkedGrid **gridlists, unsigned char ngrids) {
+  /* find the neighbours of each subdomains: west east south north */
+  /* Return a grid describing the spatial disposition of the subdomain */
+  double x_ll, y_ll, x_ur, y_ur;
+  get_extent(gridlists, ngrids, &x_ll, &y_ll, &x_ur, &y_ur);
+  double xy_ll[] = {x_ll, y_ll};
+  unsigned char xpos;
+  unsigned char ypos;
+
+  unsigned char ngridi = 0;
+  unsigned char ngridj = 0;
+
+  LinkedGrid *grid_ptr;
+  for (unsigned char i = 0; i < ngrids; ++i) {
+    grid_ptr = gridlists[i];
+    get_position(grid_ptr, xy_ll, &ypos, &xpos);
+    ngridi = (ngridi < ypos + 1) ? ypos + 1 : ngridi;
+    ngridj = (ngridj < xpos + 1) ? xpos + 1 : ngridj;
+  }
+
+  LinkedGrid **grids_disposition;
+  grids_disposition =
+      (LinkedGrid **)malloc(sizeof(LinkedGrid *) * ngridi * ngridj);
+
+  if (grids_disposition == NULL) {
+    printf(" ERROR: cannot allocate memory for grid positions \n");
+    exit(1);
+  }
+  for (unsigned int i = 0; i < ngridi * ngridj; ++i) {
+    grids_disposition[i] = NULL;
+  }
+  for (unsigned char i = 0; i < ngrids; ++i) {
+    grid_ptr = gridlists[i];
+    get_position(grid_ptr, xy_ll, &ypos, &xpos);
+    grids_disposition[ypos * ngridj + xpos] = grid_ptr;
+  }
+  AllGrids allgrids = {
+      .totalcols = (*gridlists[0]).ncols * ngridj,
+      .totalrows = (*gridlists[0]).nrows * ngridi,
+      .grids_disposition = grids_disposition,
+      .ngrids_i = ngridi,
+      .ngrids_j = ngridj,
+  };
+
+  for (unsigned char i = 0; i < ngridi; ++i) {
+    for (unsigned char j = 0; j < ngridj; ++j) {
+      grid_ptr = grids_disposition[i * ngridi + j];
+      if (grid_ptr == NULL) {
+        continue;
+      }
+      (*grid_ptr).west = (j > 0) ? grids_disposition[i * ngridi + j - 1] : NULL;
+
+      (*grid_ptr).east =
+          (j < ngridj - 1) ? grids_disposition[i * ngridi + j + 1] : NULL;
+
+      (*grid_ptr).south =
+          (i > 0) ? grids_disposition[(i - 1) * ngridi + j] : NULL;
+
+      (*grid_ptr).north =
+          (i < ngridi - 1) ? grids_disposition[(i + 1) * ngridi + j] : NULL;
+    }
+  }
+  return allgrids;
+}

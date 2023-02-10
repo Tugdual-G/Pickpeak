@@ -54,8 +54,9 @@ void insert_array(double_array *patch, int i_ll, int j_ll,
   unsigned int nc = (*canva).n, mc = (*canva).m;
 
   /* crop the inserted array if it exceed the canvas's shape */
-  unsigned int m = (i_ll + mp <= mc) ? mp : mc - i_ll;
-  unsigned int n = (j_ll + np <= nc) ? np : nc - j_ll;
+  unsigned int m = ((i_ll + mp) <= mc) ? mp : mc - i_ll;
+  unsigned int n = ((j_ll + np) <= nc) ? np : nc - j_ll;
+  // printf("m %u, n %u  ", m, n);
 
   /* If i_ll or j_ll is negative */
   unsigned int i0 = (i_ll >= 0) ? 0 : -i_ll;
@@ -79,36 +80,44 @@ double_array merge_window(AllGrids allgrids, unsigned int bbox[]) {
    *  the coresponding grid.
    * bbox : bounding box with bounds included in the windows*/
 
+  unsigned int m_w = (1 + bbox[3]) - bbox[2];
+  unsigned int n_w = (1 + bbox[1]) - bbox[0];
+  double_array merged = createdoublearray(m_w, n_w);
+
   LinkedGrid *grid = NULL;
-  unsigned int k;
+  unsigned int k = 0;
   unsigned char ngridj = allgrids.ngrids_j, ngridi = allgrids.ngrids_i;
 
   while ((grid == NULL) && (k < ngridj * ngridi)) {
     grid = allgrids.grids_disposition[k];
     ++k;
   }
+  if (grid == NULL) {
+    freearray(merged);
+    merged.val = NULL;
+    return merged;
+  }
 
   double nodata = (*grid).NODATA_value;
   unsigned int ncols = (*grid).ncols;
   unsigned int nrows = (*grid).nrows;
-
-  unsigned int m_w = bbox[3] - bbox[2];
-  unsigned int n_w = bbox[1] - bbox[0];
-  double_array merged = createdoublearray(m_w, n_w);
   fill_double_array(&merged, nodata);
 
-  /* finding wich datasets are inside the window */
+  /* finding which datasets are inside the window */
   unsigned char pos_imin, pos_imax;
   unsigned char pos_jmin, pos_jmax;
   pos_imin = bbox[2] / nrows;
   pos_imax = bbox[3] / nrows;
-  pos_imin = (pos_imin >= ngridi) ? pos_imin : 0;
-  pos_imax = (pos_imax <= ngridi) ? pos_imax : ngridi;
+  // printf("%u,%u \n", pos_imin, pos_imax);
+  pos_imax = (pos_imax < ngridi) ? pos_imax : ngridi - 1;
+
+  pos_imin = (pos_imin >= ngridi) ? pos_imax + 1 : pos_imin;
+  // printf("%u,%u \n", pos_imin, pos_imax);
 
   pos_jmin = bbox[0] / ncols;
   pos_jmax = bbox[1] / ncols;
-  pos_jmin = (pos_jmin >= ngridj) ? pos_jmin : 0;
-  pos_jmax = (pos_jmax <= ngridj) ? pos_jmax : ngridj;
+  pos_jmax = (pos_jmax < ngridj) ? pos_jmax : ngridj - 1;
+  pos_jmin = (pos_jmin >= ngridj) ? pos_jmax + 1 : pos_jmin;
 
   unsigned int i_ll, j_ll;
   for (unsigned char i = pos_imin; i < pos_imax + 1; ++i) {
@@ -119,6 +128,7 @@ double_array merge_window(AllGrids allgrids, unsigned int bbox[]) {
       }
       i_ll = i * nrows - bbox[2];
       j_ll = j * ncols - bbox[0];
+      fflush(stdout);
       insert_array(&(*grid).data, i_ll, j_ll, &merged);
     }
   }
@@ -171,6 +181,9 @@ void get_position(LinkedGrid *subdomain, double xylowleftcorner[],
 AllGrids link_grids(LinkedGrid **gridlists, unsigned char ngrids) {
   /* find the neighbours of each subdomains: west east south north */
   /* Return a grid describing the spatial disposition of the subdomain */
+  if (ngrids == 0) {
+    printf("\n ERROR: number of grids provided in grid list is 0 \n");
+  }
   double x_ll, y_ll, x_ur, y_ur;
   get_extent(gridlists, ngrids, &x_ll, &y_ll, &x_ur, &y_ur);
   double xy_ll[] = {x_ll, y_ll};
@@ -180,25 +193,35 @@ AllGrids link_grids(LinkedGrid **gridlists, unsigned char ngrids) {
   unsigned char ngridi = 0;
   unsigned char ngridj = 0;
 
-  LinkedGrid *grid_ptr;
+  LinkedGrid *grid_ptr = NULL;
   for (unsigned char i = 0; i < ngrids; ++i) {
     grid_ptr = gridlists[i];
+    if (grid_ptr == NULL) {
+      printf("\n ERROR: the list contains a null ptr \n");
+      exit(1);
+    }
     get_position(grid_ptr, xy_ll, &ypos, &xpos);
     ngridi = (ngridi < ypos + 1) ? ypos + 1 : ngridi;
     ngridj = (ngridj < xpos + 1) ? xpos + 1 : ngridj;
   }
 
-  LinkedGrid **grids_disposition;
+  /* Just to shut the compiler warning off */
+  if (grid_ptr == NULL) {
+    printf("\n ERROR: the list contains a null ptr \n");
+    exit(1);
+  }
+
+  LinkedGrid **grids_disposition = NULL;
   grids_disposition =
       (LinkedGrid **)malloc(sizeof(LinkedGrid *) * ngridi * ngridj);
-
   if (grids_disposition == NULL) {
-    printf(" ERROR: cannot allocate memory for grid positions \n");
+    printf("\n ERROR: cannot allocate memory for grid positions \n");
     exit(1);
   }
   for (unsigned int i = 0; i < ngridi * ngridj; ++i) {
     grids_disposition[i] = NULL;
   }
+
   for (unsigned char i = 0; i < ngrids; ++i) {
     grid_ptr = gridlists[i];
     get_position(grid_ptr, xy_ll, &ypos, &xpos);
@@ -210,6 +233,8 @@ AllGrids link_grids(LinkedGrid **gridlists, unsigned char ngrids) {
       .grids_disposition = grids_disposition,
       .ngrids_i = ngridi,
       .ngrids_j = ngridj,
+      .sub_ncols = (*grid_ptr).ncols,
+      .sub_nrows = (*grid_ptr).nrows,
   };
 
   for (unsigned char i = 0; i < ngridi; ++i) {

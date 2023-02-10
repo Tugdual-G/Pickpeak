@@ -38,6 +38,8 @@ struct AllGrids {
   LinkedGrid **grids_disposition;
   unsigned char ngrids_i;
   unsigned char ngrids_j;
+  unsigned int sub_nrows;
+  unsigned int sub_ncols;
 };
 
 struct SubGrid {

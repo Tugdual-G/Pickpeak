@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static char is_data_in_window(unsigned int bbox[], AllGrids allgrids);
+
 void get_extent(LinkedGrid **gridlist, unsigned char ngrids, double *x_ll,
                 double *y_ll, double *x_ur, double *y_ur) {
 
@@ -112,7 +114,6 @@ double_array merge_window(AllGrids allgrids, unsigned int bbox[]) {
   pos_imax = (pos_imax < ngridi) ? pos_imax : ngridi - 1;
 
   pos_imin = (pos_imin >= ngridi) ? pos_imax + 1 : pos_imin;
-  // printf("%u,%u \n", pos_imin, pos_imax);
 
   pos_jmin = bbox[0] / ncols;
   pos_jmax = bbox[1] / ncols;
@@ -128,55 +129,11 @@ double_array merge_window(AllGrids allgrids, unsigned int bbox[]) {
       }
       i_ll = i * nrows - bbox[2];
       j_ll = j * ncols - bbox[0];
-      fflush(stdout);
       insert_array(&(*grid).data, i_ll, j_ll, &merged);
     }
   }
   return merged;
 }
-
-double_array merge(LinkedGrid **gridlist, unsigned char ngrids, double nodata) {
-  /* gridlist : grids to be merged */
-
-  LinkedGrid grid = *gridlist[0];
-  double x_ll, y_ll;
-  double x_ur, y_ur;
-  double dx = grid.cellsize;
-
-  get_extent(gridlist, ngrids, &x_ll, &y_ll, &x_ur, &y_ur);
-
-  unsigned int m_t, n_t;
-  m_t = (y_ur - y_ll) / dx + 1;
-  n_t = (x_ur - x_ll) / dx + 1;
-
-  double_array totaldomain = createdoublearray(m_t, n_t);
-  fill_double_array(&totaldomain, nodata);
-
-  unsigned int i0, j0;
-  for (unsigned int i = 0; i < ngrids; ++i) {
-    grid = *gridlist[i];
-    i0 = (grid.yllcenter - y_ll) / dx; // TODO might fail
-    j0 = (grid.xllcenter - x_ll) / dx; // TODO might fail
-    insert_array(&grid.data, i0, j0, &totaldomain);
-  }
-  return totaldomain;
-}
-
-void get_position(LinkedGrid *subdomain, double xylowleftcorner[],
-                  unsigned char *pos_i, unsigned char *pos_j) {
-  /* Finds the position of a subdomain in the whole domain */
-  /* The shape of the differents input datasets is suposed to be identical */
-  /* x_ll and y_ll describe the position of the low left corner of the whole
-   * domain*/
-  double x_ll = xylowleftcorner[0], y_ll = xylowleftcorner[1];
-  unsigned int nrows = (*subdomain).nrows;
-  unsigned int ncols = (*subdomain).ncols;
-  double dx = (*subdomain).cellsize;
-
-  /* add + dx to avoid rounding (floring) error */
-  *pos_i = (unsigned char)(((*subdomain).yllcenter - y_ll + dx) / (nrows * dx));
-  *pos_j = (unsigned char)(((*subdomain).xllcenter - x_ll + dx) / (ncols * dx));
-};
 
 AllGrids link_grids(LinkedGrid **gridlists, unsigned char ngrids) {
   /* find the neighbours of each subdomains: west east south north */
@@ -257,3 +214,187 @@ AllGrids link_grids(LinkedGrid **gridlists, unsigned char ngrids) {
   }
   return allgrids;
 }
+
+AllGrids divide_domain(AllGrids allgrids, unsigned int step) {
+  /* Return a new domain made of subdomains whose shapes are
+   * multiples of the step size (except near the border of the domain).
+   */
+
+  unsigned int totalrows = allgrids.totalrows;
+  unsigned int totalcols = allgrids.totalcols;
+  unsigned int newsub_m, newsub_n;
+  /* If the step is larger than the total domain, hay no problema */
+  newsub_m = allgrids.sub_nrows - (allgrids.sub_nrows % step);
+  newsub_m = (newsub_m == 0) ? step : newsub_m;
+
+  newsub_n = allgrids.sub_ncols - (allgrids.sub_ncols % step);
+  newsub_n = (newsub_n == 0) ? step : newsub_n;
+
+  unsigned char new_ngridi, new_ngridj;
+  new_ngridi = (totalrows % newsub_n == 0) ? totalrows / newsub_n
+                                           : totalrows / newsub_n + 1;
+  new_ngridj = (totalcols % newsub_m == 0) ? totalcols / newsub_m
+                                           : totalcols / newsub_m + 1;
+
+  LinkedGrid **gridisposition = NULL;
+  gridisposition =
+      (LinkedGrid **)malloc(sizeof(LinkedGrid *) * new_ngridi * new_ngridj);
+  if (gridisposition == NULL) {
+    exit(1);
+  }
+  for (unsigned int i = 0; i < new_ngridi; ++i) {
+    for (unsigned int j = 0; j < new_ngridj; ++j) {
+      gridisposition[i * new_ngridj + j] = NULL;
+    }
+  }
+
+  AllGrids new_allgrids = {
+      .grids_disposition = gridisposition,
+      .ngrids_i = new_ngridi,
+      .ngrids_j = new_ngridj,
+      .sub_nrows = newsub_m,
+      .sub_ncols = newsub_n,
+      .totalrows = totalrows,
+      .totalcols = totalcols,
+  };
+
+  unsigned int bbox[4];
+  LinkedGrid *grid = NULL;
+  for (unsigned int i = 0; i < new_ngridi; ++i) {
+    for (unsigned int j = 0; j < new_ngridj; ++j) {
+      bbox[0] = i * newsub_m;
+      bbox[1] = (i + 1) * newsub_m - 1;
+      bbox[2] = j * newsub_n;
+      bbox[3] = (j + 1) * newsub_n - 1;
+
+      /* crop if it exceed data limits */
+      bbox[1] = (bbox[1] > totalcols - 1) ? totalcols - 1 : bbox[1];
+      bbox[3] = (bbox[3] > totalrows - 1) ? totalrows - 1 : bbox[3];
+
+      if (!is_data_in_window(bbox, allgrids)) {
+        continue;
+      }
+      grid = NULL;
+      grid = malloc(sizeof(LinkedGrid));
+      if (grid == NULL) {
+        exit(1);
+      }
+      (*grid).ncols = 0;
+      (*grid).nrows = 0;
+      (*grid).xllcenter = 0;
+      (*grid).yllcenter = 0;
+      printf("%u, %u, %u, %u \n", bbox[0], bbox[1], bbox[2], bbox[3]);
+      fflush(stdout);
+      (*grid).data = merge_window(allgrids, bbox);
+      gridisposition[i * new_ngridj + j] = grid;
+    }
+  }
+  return new_allgrids;
+}
+
+static char is_data_in_window(unsigned int bbox[], AllGrids allgrids) {
+  /* Check if there is data in the bounding box
+   * The bbox bounds are included in the domain.
+   * The bounds must be specified in index coordinates.
+   * bbox = [left, rigth, bottom, top] */
+
+  unsigned int ncols = allgrids.sub_ncols;
+  unsigned int nrows = allgrids.sub_nrows;
+  char i0, i1, j0, j1;
+  j0 = bbox[0] / ncols;
+  j1 = bbox[1] / ncols;
+  i0 = bbox[2] / nrows;
+  i1 = bbox[3] / nrows;
+
+  unsigned char ngrid_j = allgrids.ngrids_j;
+  void *grid = NULL;
+  for (unsigned char i = i0; i < i1 + 1; ++i) {
+    for (unsigned char j = j0; j < j1 + 1; ++j) {
+      grid = allgrids.grids_disposition[i * ngrid_j + j];
+      if (grid != NULL) {
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+double_array merge_allgrids(AllGrids allgrids) {
+  /* merge all the grids contained in allgrids */
+
+  unsigned int m_w = allgrids.totalrows, n_w = allgrids.totalcols;
+  double_array merged = createdoublearray(m_w, n_w);
+
+  LinkedGrid *grid = NULL;
+  unsigned int k = 0;
+  unsigned char ngridj = allgrids.ngrids_j, ngridi = allgrids.ngrids_i;
+
+  while ((grid == NULL) && (k < ngridj * ngridi)) {
+    grid = allgrids.grids_disposition[k];
+    ++k;
+  }
+  if (grid == NULL) {
+    freearray(merged);
+    merged.val = NULL;
+    return merged;
+  }
+
+  double nodata = (*grid).NODATA_value;
+  fill_double_array(&merged, nodata);
+  unsigned int i_ll, j_ll;
+  for (unsigned char i = 0; i < allgrids.ngrids_i; ++i) {
+    for (unsigned char j = 0; j < allgrids.ngrids_j; ++j) {
+      grid = allgrids.grids_disposition[i * ngridj + j];
+      if (grid == NULL) {
+        continue;
+      }
+      i_ll = i * allgrids.sub_nrows;
+      j_ll = j * allgrids.sub_ncols;
+      insert_array(&(*grid).data, i_ll, j_ll, &merged);
+    }
+  }
+  return merged;
+}
+
+double_array merge(LinkedGrid **gridlist, unsigned char ngrids, double nodata) {
+  /* gridlist : grids to be merged */
+
+  LinkedGrid grid = *gridlist[0];
+  double x_ll, y_ll;
+  double x_ur, y_ur;
+  double dx = grid.cellsize;
+
+  get_extent(gridlist, ngrids, &x_ll, &y_ll, &x_ur, &y_ur);
+
+  unsigned int m_t, n_t;
+  m_t = (y_ur - y_ll) / dx + 1;
+  n_t = (x_ur - x_ll) / dx + 1;
+
+  double_array totaldomain = createdoublearray(m_t, n_t);
+  fill_double_array(&totaldomain, nodata);
+
+  unsigned int i0, j0;
+  for (unsigned int i = 0; i < ngrids; ++i) {
+    grid = *gridlist[i];
+    i0 = (grid.yllcenter - y_ll) / dx; // TODO might fail
+    j0 = (grid.xllcenter - x_ll) / dx; // TODO might fail
+    insert_array(&grid.data, i0, j0, &totaldomain);
+  }
+  return totaldomain;
+}
+
+void get_position(LinkedGrid *subdomain, double xylowleftcorner[],
+                  unsigned char *pos_i, unsigned char *pos_j) {
+  /* Finds the position of a subdomain in the whole domain */
+  /* The shape of the differents input datasets is suposed to be identical */
+  /* x_ll and y_ll describe the position of the low left corner of the whole
+   * domain*/
+  double x_ll = xylowleftcorner[0], y_ll = xylowleftcorner[1];
+  unsigned int nrows = (*subdomain).nrows;
+  unsigned int ncols = (*subdomain).ncols;
+  double dx = (*subdomain).cellsize;
+
+  /* add + dx to avoid rounding (floring) error */
+  *pos_i = (unsigned char)(((*subdomain).yllcenter - y_ll + dx) / (nrows * dx));
+  *pos_j = (unsigned char)(((*subdomain).xllcenter - x_ll + dx) / (ncols * dx));
+};

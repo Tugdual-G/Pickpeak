@@ -8,12 +8,19 @@ typedef struct SubGrid SubGrid;
 typedef struct LinkedGrid LinkedGrid;
 typedef struct AllGrids AllGrids;
 
+/* find the neighbours of each subdomains: west east south north */
+AllGrids link_grids(LinkedGrid **gridlists, unsigned char ngrids);
+
+/* Return a new domain made of subdomains whose shapes are
+ * multiples of the step size (except near the border of the domain).
+ */
+AllGrids divide_domain(AllGrids allgrids, unsigned int step);
+
 /* Get the total spacial extent of a list of Grids */
 void get_extent(LinkedGrid **gridlist, unsigned char ngrids, double *x_ll,
                 double *y_ll, double *x_ur, double *y_ur);
 
 /* Insert an array into a bigger array;
- *
  * i0, j0 : coordinates of the first element of the inserted array in the
  * canva */
 void insert_array(double_array *patch, int i0, int j0, double_array *canva);
@@ -29,8 +36,8 @@ void get_position(LinkedGrid *subdomain, double xylowleftcorner[],
  * [left, rigth,bottom, top]*/
 double_array merge_window(AllGrids allgrids, unsigned int bbox[]);
 
-/* find the neighbours of each subdomains: west east south north */
-AllGrids link_grids(LinkedGrid **gridlists, unsigned char ngrids);
+/* merge all the grids contained in allgrids */
+double_array merge_allgrids(AllGrids allgrids);
 
 struct AllGrids {
   unsigned int totalcols;
@@ -59,14 +66,14 @@ struct LinkedGrid {
   unsigned int nrows;
   double xllcorner;
   double yllcorner;
+  double xllcenter;
+  double yllcenter;
+  char centered;
   double cellsize;
   double NODATA_value;
   char hasNODATAval;
   double maxval;
   double minval;
-  double xllcenter;
-  double yllcenter;
-  char centered;
   double_array data;
   long int f_position;     /* position of the data in the ascii file */
   struct LinkedGrid *west; /* west neighbouring grid */

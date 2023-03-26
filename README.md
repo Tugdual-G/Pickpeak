@@ -6,8 +6,8 @@ For now, the script takes an ASCII Grid file as input and a radius of exclusion 
 The output is a GEOjson file containing the isolated peaks coordinates and elevation.
 A peak is chosen when there is no taller peak in its surrounding area, defined by the radius R.
 R is in the units of the grid, in the same way,
-**the distance between the summits will be computed in the grid units**,
-so the data must be in a locally suited projection.
+**the distance between the summits will be computed in the grid units and projection**,
+i.e., the computed distances are not geodesic distances, so the data must be in a locally suited projection.
 
 NODATA values are ignored, if provided in the ASCIIgrid header.
 

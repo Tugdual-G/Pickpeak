@@ -17,3 +17,4 @@ pickpeak
 *.shp
 *.shx
 !griddata.asc
+python/
